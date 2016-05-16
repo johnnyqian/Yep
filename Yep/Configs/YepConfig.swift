@@ -20,7 +20,7 @@ let MediaOptionsInfos: KingfisherOptionsInfo = [
     .Transition(ImageTransition.Fade(imageFadeTransitionDuration))
 ]
 
-class YepConfig {
+final class YepConfig {
 
     static let appGroupID: String = "group.Catch-Inc.Yep"
     
@@ -59,6 +59,10 @@ class YepConfig {
         static let deletedMessages = "YepConfig.Notification.deletedMessages"
         static let updatedUser = "YepConfig.Notification.updatedUser"
         static let OAuthResult = "YepConfig.Notification.OAuthResult"
+        static let createdFeed = "YepConfig.Notification.createdFeed"
+        static let deletedFeed = "YepConfig.Notification.deletedFeed"
+        static let switchedToOthersFromContactsTab = "YepConfig.Notification.switchedToOthersFromContactsTab"
+        static let blockedFeedsByCreator = "YepConfig.Notification.blockedFeedsByCreator"
     }
 
     struct Message {
@@ -134,11 +138,7 @@ class YepConfig {
         static let userCellAvatarSize: CGFloat = 80
 
         static let introFont: UIFont = {
-            if #available(iOS 8.2, *) {
-                return UIFont.systemFontOfSize(12, weight: UIFontWeightLight)
-            } else {
-                return UIFont(name: "HelveticaNeue-Light", size: 12)!
-            }
+            return UIFont.systemFontOfSize(12, weight: UIFontWeightLight)
         }()
 
         static let introInset: CGFloat = 20 + userCellAvatarSize + 20 + 10 + 11 + 20
@@ -146,15 +146,11 @@ class YepConfig {
 
     struct EditProfile {
 
-        static let introFont: UIFont = {
-            if #available(iOS 8.2, *) {
-                return UIFont.systemFontOfSize(15, weight: UIFontWeightLight)
-            } else {
-                return UIFont(name: "HelveticaNeue-Light", size: 15)!
-            }
+        static let infoFont: UIFont = {
+            return UIFont.systemFontOfSize(15, weight: UIFontWeightLight)
         }()
 
-        static let introInset: CGFloat = 20 + 20
+        static let infoInset: CGFloat = 20 + 20
     }
 
     struct SocialWorkGithub {
@@ -166,6 +162,23 @@ class YepConfig {
 
     struct ContactsCell {
         static let separatorInset = UIEdgeInsets(top: 0, left: 85, bottom: 0, right: 0)
+    }
+
+    struct SearchTableView {
+        static let separatorColor = UIColor(red: 245/255.0, green: 245/255.0, blue: 245/255.0, alpha: 1)
+        static let backgroundColor = UIColor(red: 250/255.0, green: 250/255.0, blue: 250/255.0, alpha: 1)
+    }
+
+    struct SearchedItemCell {
+        static let separatorInset = UIEdgeInsets(top: 0, left: 15, bottom: 0, right: 0)
+
+        static let nicknameFont = UIFont.systemFontOfSize(14, weight: UIFontWeightMedium)
+        static let nicknameColor = UIColor.darkGrayColor()
+        static let usernameFont = UIFont.systemFontOfSize(12)
+        static let usernameColor = UIColor.lightGrayColor()
+        static let messageFont = UIFont.systemFontOfSize(12)
+        static let messageColor = UIColor.yep_mangmorGrayColor()
+        static let logoTintColor = UIColor.yep_mangmorGrayColor()
     }
 
     struct ConversationCell {
@@ -240,6 +253,10 @@ class YepConfig {
         static let imageSize: CGSize = CGSize(width: 80, height: 80)
     }
 
+    struct SearchedFeedNormalImagesCell {
+        static let imageSize: CGSize = CGSize(width: 70, height: 70)
+    }
+
     struct FeedView {
         static let textAttributes:[String: NSObject] = [
             NSFontAttributeName: UIFont.feedMessageFont(),
@@ -259,7 +276,7 @@ class YepConfig {
         static let thumbnailString = "thumbnail_string"
         static let blurredThumbnailString = "blurred_thumbnail_string"
 
-        static let thumbnailMaxSize: CGFloat = 100
+        static let thumbnailMaxSize: CGFloat = 60
     }
 
     struct Media {

@@ -9,7 +9,7 @@
 import UIKit
 
 @IBDesignable
-class SkillCategoryButton: UIButton {
+final class SkillCategoryButton: UIButton {
 
     @IBInspectable var categoryImage: UIImage = UIImage() {
         willSet {
@@ -50,11 +50,7 @@ class SkillCategoryButton: UIButton {
     lazy var categoryTitleLabel: UILabel = {
         let label = UILabel()
         label.textColor = UIColor.whiteColor()
-        if #available(iOS 8.2, *) {
-            label.font = UIFont.systemFontOfSize(24, weight: UIFontWeightThin)
-        } else {
-            label.font = UIFont(name: "HelveticaNeue-Thin", size: 24)!
-        }
+        label.font = UIFont.systemFontOfSize(24, weight: UIFontWeightThin)
         return label
     }()
 
@@ -73,7 +69,7 @@ class SkillCategoryButton: UIButton {
 
         makeUI()
 
-        self.addTarget(self, action: "toggleSelectionState", forControlEvents: .TouchUpInside)
+        self.addTarget(self, action: #selector(SkillCategoryButton.toggleSelectionState), forControlEvents: .TouchUpInside)
     }
 
     func makeUI() {
@@ -86,13 +82,13 @@ class SkillCategoryButton: UIButton {
         categoryTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
 
-        let viewsDictionary = [
+        let viewsDictionary: [String: AnyObject] = [
             "categoryImageView": categoryImageView,
             "categoryTitleLabel": categoryTitleLabel,
             "arrowImageView": arrowImageView,
         ]
 
-        let constraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[categoryImageView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let constraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[categoryImageView]|", options: [], metrics: nil, views: viewsDictionary)
 
         let constraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|-20-[categoryImageView(40)]-20-[categoryTitleLabel][arrowImageView(20)]-20-|", options: [.AlignAllCenterY, .AlignAllTop, .AlignAllBottom], metrics: nil, views: viewsDictionary)
 

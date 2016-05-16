@@ -138,3 +138,38 @@ extension NSURL {
     }
 }
 
+extension NSURL {
+
+    var yep_isNetworkURL: Bool {
+
+        switch scheme {
+        case "http", "https":
+            return true
+        default:
+            return false
+        }
+    }
+
+    var yep_validSchemeNetworkURL: NSURL? {
+
+        if scheme.isEmpty {
+
+            guard let URLComponents = NSURLComponents(URL: self, resolvingAgainstBaseURL: false) else {
+                return nil
+            }
+
+            URLComponents.scheme = "http"
+
+            return URLComponents.URL
+
+        } else {
+            if yep_isNetworkURL {
+                return self
+
+            } else {
+                return nil
+            }
+        }
+    }
+}
+

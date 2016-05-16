@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ChatRightAudioCell: ChatRightBaseCell {
+final class ChatRightAudioCell: ChatRightBaseCell {
 
     var audioPlayedDuration: Double = 0 {
         willSet {
@@ -90,7 +90,7 @@ class ChatRightAudioCell: ChatRightBaseCell {
         }
 
         bubbleImageView.userInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: "tapMediaView")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(ChatRightAudioCell.tapMediaView))
         bubbleImageView.addGestureRecognizer(tap)
 
         prepareForMenuAction = { otherGesturesEnabled in

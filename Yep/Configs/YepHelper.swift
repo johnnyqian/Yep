@@ -49,9 +49,10 @@ func cancel(cancelableTask: CancelableTask?) {
 
 func unregisterThirdPartyPush() {
     dispatch_async(dispatch_get_main_queue()) {
-        //JPUSHService.setAlias(nil, callbackSelector: nil, object: nil)
-        APService.setAlias(nil, callbackSelector: nil, object: nil)
+        #if JPUSH
+        JPUSHService.setAlias(nil, callbackSelector: nil, object: nil)
         UIApplication.sharedApplication().applicationIconBadgeNumber = 0
+        #endif
     }
 }
 
@@ -69,11 +70,15 @@ func cleanRealmAndCaches() {
 
     realm.refresh()
 
+    println("cleaned realm!")
+
     // cleam all memory caches
     
     AvatarPod.clear()
 
     ImageCache.sharedInstance.cache.removeAllObjects()
+
+    println("cleaned caches!")
 
     // clean Message File caches
 
@@ -83,11 +88,15 @@ func cleanRealmAndCaches() {
 
     NSFileManager.cleanAvatarCaches()
 
-    NSNotificationCenter.defaultCenter().postNotificationName(EditProfileViewController.Notification.Logout, object: nil)
-}
+    println("cleaned files!")
 
-func isOperatingSystemAtLeastMajorVersion(majorVersion: Int) -> Bool {
-    return NSProcessInfo().isOperatingSystemAtLeastVersion(NSOperatingSystemVersion(majorVersion: majorVersion, minorVersion: 0, patchVersion: 0))
+    // clean shortcuts
+
+    clearDynamicShortcuts()
+
+    dispatch_async(dispatch_get_main_queue()) {
+        NSNotificationCenter.defaultCenter().postNotificationName(EditProfileViewController.Notification.Logout, object: nil)
+    }
 }
 
 extension String {

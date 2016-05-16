@@ -3,7 +3,7 @@ platform :ios, '8.0'
 use_frameworks!
 
 def pods
-    pod 'Kanna'
+    pod 'Kanna', '1.0.2'
     pod 'Navi'
     pod 'Appsee'
     pod 'Alamofire'
@@ -12,7 +12,6 @@ def pods
     pod 'KeyboardMan'
     pod 'Ruler'
     pod 'Proposer'
-    pod 'APAddressBook/Swift'
     pod 'FXBlurView'
     pod 'Kingfisher'
     pod 'TPKeyboardAvoiding'
@@ -21,11 +20,12 @@ def pods
     pod 'SocketRocket'
     pod 'RealmSwift'
     pod 'MonkeyKing', '0.0.2'
-    pod 'JPush-iOS-SDK', '1.8.8'
+    pod 'JPush'
     pod 'Fabric'
-    pod 'Crashlytics'
 end
 
 target 'Yep' do
     pods
 end
+
+

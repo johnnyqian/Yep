@@ -8,7 +8,7 @@
 
 import UIKit
 
-class FeedLocationContainerView: UIView {
+final class FeedLocationContainerView: UIView {
 
     var tapAction: (() -> Void)?
 
@@ -50,7 +50,7 @@ class FeedLocationContainerView: UIView {
 
         makeUI()
 
-        let tap = UITapGestureRecognizer(target: self, action: "tap:")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(FeedLocationContainerView.tap(_:)))
         addGestureRecognizer(tap)
     }
 
@@ -68,7 +68,7 @@ class FeedLocationContainerView: UIView {
         horizontalLineView.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        let views = [
+        let views: [String: AnyObject] = [
             "backgroundImageView": backgroundImageView,
             "mapImageView": mapImageView,
             "horizontalLineView": horizontalLineView,

@@ -8,7 +8,7 @@
 
 import UIKit
 
-class LinkContainerView: UIView {
+final class LinkContainerView: UIView {
 
     var tapAction: (() -> Void)?
 
@@ -38,7 +38,7 @@ class LinkContainerView: UIView {
 
         makeUI()
 
-        let tap = UITapGestureRecognizer(target: self, action: "tap:")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(LinkContainerView.tap(_:)))
         addGestureRecognizer(tap)
     }
 
@@ -52,7 +52,7 @@ class LinkContainerView: UIView {
         textLabel.translatesAutoresizingMaskIntoConstraints = false
         accessoryImageView.translatesAutoresizingMaskIntoConstraints = false
 
-        let views = [
+        let views: [String: AnyObject] = [
             "iconImageView": iconImageView,
             "textLabel": textLabel,
             "accessoryImageView": accessoryImageView,

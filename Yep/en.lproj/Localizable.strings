@@ -95,6 +95,9 @@
 "Choose Photo" = "Choose Photo";
 
 /* No comment provided by engineer. */
+"Choose from Library" = "Choose from Library";
+
+/* No comment provided by engineer. */
 "Choose photo" = "Choose photo";
 
 /* No comment provided by engineer. */
@@ -156,19 +159,19 @@
 "Face to Face" = "Face to Face";
 
 /* No comment provided by engineer. */
-"Failed to resend audio!\nPlease make sure your iPhone is connected to the Internet." = "Failed to resend audio!\nPlease make sure your iPhone is connected to the Internet.";
+"Failed to resend audio!\nPlease make sure your device is connected to the Internet." = "Failed to resend audio!\nPlease make sure your device is connected to the Internet.";
 
 /* No comment provided by engineer. */
-"Failed to resend image!\nPlease make sure your iPhone is connected to the Internet." = "Failed to resend image!\nPlease make sure your iPhone is connected to the Internet.";
+"Failed to resend image!\nPlease make sure your device is connected to the Internet." = "Failed to resend image!\nPlease make sure your device is connected to the Internet.";
 
 /* No comment provided by engineer. */
-"Failed to resend location!\nPlease make sure your iPhone is connected to the Internet." = "Failed to resend location!\nPlease make sure your iPhone is connected to the Internet.";
+"Failed to resend location!\nPlease make sure your device is connected to the Internet." = "Failed to resend location!\nPlease make sure your device is connected to the Internet.";
 
 /* No comment provided by engineer. */
-"Failed to resend text!\nPlease make sure your iPhone is connected to the Internet." = "Failed to resend text!\nPlease make sure your iPhone is connected to the Internet.";
+"Failed to resend text!\nPlease make sure your device is connected to the Internet." = "Failed to resend text!\nPlease make sure your device is connected to the Internet.";
 
 /* No comment provided by engineer. */
-"Failed to resend video!\nPlease make sure your iPhone is connected to the Internet." = "Failed to resend video!\nPlease make sure your iPhone is connected to the Internet.";
+"Failed to resend video!\nPlease make sure your device is connected to the Internet." = "Failed to resend video!\nPlease make sure your device is connected to the Internet.";
 
 /* No comment provided by engineer. */
 "Failed to send audio!\nTry tap on message to resend." = "Failed to send audio!\nTry tap on message to resend.";
@@ -347,7 +350,10 @@
 /* No comment provided by engineer. */
 "recording" = "recording";
 
-/* No comment provided by engineer. */
+//* No comment provided by engineer. */
+"Recently Deleted"= "Recently Deleted";
+
+* No comment provided by engineer. */
 "Reject" = "Reject";
 
 /* No comment provided by engineer. */
@@ -537,7 +543,7 @@
 "You have blocked %@! Do you want to unblock him or her?" = "You have blocked %@! Do you want to unblock him or her?";
 
 /* No comment provided by engineer. */
-"Pods help Yep" = "Pods help Yep";
+"Pods helps Yep" = "Pods helps Yep";
 
 /* No comment provided by engineer. */
 "Rate Yep on App Store" = "Rate Yep on App Store";

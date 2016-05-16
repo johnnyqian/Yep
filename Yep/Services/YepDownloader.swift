@@ -10,7 +10,7 @@ import Foundation
 import RealmSwift
 import ImageIO
 
-class YepDownloader: NSObject {
+final class YepDownloader: NSObject {
 
     static let sharedDownloader = YepDownloader()
 
@@ -322,7 +322,7 @@ extension YepDownloader: NSURLSessionDataDelegate {
                     let data = progressReporters[i].tasks[j].tempData
                     finishedAction(data)
 
-                    progressReporters[i].finishedTasksCount++
+                    progressReporters[i].finishedTasksCount += 1
 
                     // 若任务都已完成，移除此 progressReporter
                     if progressReporters[i].finishedTasksCount == progressReporters[i].tasks.count {
@@ -336,19 +336,18 @@ extension YepDownloader: NSURLSessionDataDelegate {
     }
 
     func URLSession(session: NSURLSession, dataTask: NSURLSessionDataTask, didReceiveResponse response: NSURLResponse, completionHandler: (NSURLSessionResponseDisposition) -> Void) {
-        println("YepDownloader begin, expectedContentLength:\(response.expectedContentLength)")
+        //println("YepDownloader begin, expectedContentLength:\(response.expectedContentLength)")
         reportProgressAssociatedWithDownloadTask(dataTask, totalBytes: response.expectedContentLength)
         completionHandler(.Allow)
     }
 
     func URLSession(session: NSURLSession, dataTask: NSURLSessionDataTask, didReceiveData data: NSData) {
-        println("YepDownloader data.length: \(data.length)")
+        //println("YepDownloader data.length: \(data.length)")
 
         let finish = reportProgressAssociatedWithDownloadTask(dataTask, didReceiveData: data)
 
         if finish {
-            println("YepDownloader finish")
-
+            //println("YepDownloader finish")
             finishDownloadTask(dataTask)
         }
     }

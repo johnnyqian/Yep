@@ -8,7 +8,7 @@
 
 import UIKit
 
-class FeedConversationCell: UITableViewCell {
+final class FeedConversationCell: UITableViewCell {
 
     @IBOutlet weak var mediaView: FeedMediaView!
     @IBOutlet weak var nameLabel: UILabel!
@@ -18,11 +18,9 @@ class FeedConversationCell: UITableViewCell {
 
     var conversation: Conversation!
 
-    var countOfUnreadMessages = 0 {
+    private var hasUnreadMessages: Bool = false {
         didSet {
-            let hidden = countOfUnreadMessages == 0
-
-            redDotImageView.hidden = hidden
+            redDotImageView.hidden = !hasUnreadMessages
         }
     }
 
@@ -43,10 +41,7 @@ class FeedConversationCell: UITableViewCell {
         
         mediaView.hidden = true
         
-        mediaView.imageView1.image = nil
-        mediaView.imageView2.image = nil
-        mediaView.imageView3.image = nil
-        mediaView.imageView4.image = nil
+        mediaView.clearImages()
     }
 
     func configureWithConversation(conversation: Conversation) {
@@ -57,7 +52,8 @@ class FeedConversationCell: UITableViewCell {
             return
         }
 
-        countOfUnreadMessages = countOfUnreadMessagesInConversation(conversation)
+        hasUnreadMessages = conversation.hasUnreadMessages
+        //countOfUnreadMessages = countOfUnreadMessagesInConversation(conversation)
         //countOfUnreadMessages = conversation.unreadMessagesCount
 
         nameLabel.text = feed.body

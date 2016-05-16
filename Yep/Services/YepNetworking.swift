@@ -43,10 +43,16 @@ public struct Resource<A>: CustomStringConvertible {
     }
 }
 
+public enum ErrorCode: String {
+    case BlockedByRecipient = "rejected_your_message"
+    case NotYetRegistered = "not_yet_registered"
+    case UserWasBlocked = "user_was_blocked"
+}
+
 public enum Reason: CustomStringConvertible {
     case CouldNotParseJSON
     case NoData
-    case NoSuccessStatusCode(statusCode: Int)
+    case NoSuccessStatusCode(statusCode: Int, errorCode: ErrorCode?)
     case Other(NSError?)
 
     public var description: String {
@@ -74,9 +80,15 @@ let defaultFailureHandler: FailureHandler = { reason, errorMessage in
 }
 
 func queryComponents(key: String, value: AnyObject) -> [(String, String)] {
+
     func escape(string: String) -> String {
-        let legalURLCharactersToBeEscaped: CFStringRef = ":/?&=;+!@#$()',*"
-        return CFURLCreateStringByAddingPercentEscapes(nil, string, nil, legalURLCharactersToBeEscaped, CFStringBuiltInEncodings.UTF8.rawValue) as String
+        let generalDelimitersToEncode = ":#[]@" // does not include "?" or "/" due to RFC 3986 - Section 3.4
+        let subDelimitersToEncode = "!$&'()*+,;="
+
+        let allowedCharacterSet = NSCharacterSet.URLQueryAllowedCharacterSet().mutableCopy() as! NSMutableCharacterSet
+        allowedCharacterSet.removeCharactersInString(generalDelimitersToEncode + subDelimitersToEncode)
+
+        return string.stringByAddingPercentEncodingWithAllowedCharacters(allowedCharacterSet) ?? string
     }
 
     var components: [(String, String)] = []
@@ -101,7 +113,7 @@ var yepNetworkActivityCount = 0 {
     }
 }
 
-private let yepSuccessStatusCodeRange = Range<Int>(start: 200, end: 300)
+private let yepSuccessStatusCodeRange: Range<Int> = 200..<300
 
 #if STAGING
 class SessionDelegate: NSObject, NSURLSessionDelegate {
@@ -180,7 +192,7 @@ public func apiRequest<A>(modifyRequest: NSMutableURLRequest -> (), baseURL: NSU
     }
 
     #if DEBUG
-    //println(request.cURLCommandLineWithSession(session))
+    println(request.cURLCommandLineWithSession(session))
     #endif
 
     let _failure: FailureHandler
@@ -218,7 +230,8 @@ public func apiRequest<A>(modifyRequest: NSMutableURLRequest -> (), baseURL: NSU
                 }
 
             } else {
-                _failure(reason: .NoSuccessStatusCode(statusCode: httpResponse.statusCode), errorMessage: errorMessageInData(data))
+                let errorCode = errorCodeInData(data)
+                _failure(reason: .NoSuccessStatusCode(statusCode: httpResponse.statusCode, errorCode: errorCode), errorMessage: errorMessageInData(data))
                 println("\(resource)\n")
                 println(request.cURLCommandLine)
 
@@ -243,14 +256,14 @@ public func apiRequest<A>(modifyRequest: NSMutableURLRequest -> (), baseURL: NSU
         }
 
         dispatch_async(dispatch_get_main_queue()) {
-            yepNetworkActivityCount--
+            yepNetworkActivityCount -= 1
         }
     }
 
     task.resume()
 
     dispatch_async(dispatch_get_main_queue()) {
-        yepNetworkActivityCount++
+        yepNetworkActivityCount += 1
     }
 }
 
@@ -259,6 +272,19 @@ func errorMessageInData(data: NSData?) -> String? {
         if let json = decodeJSON(data) {
             if let errorMessage = json["error"] as? String {
                 return errorMessage
+            }
+        }
+    }
+
+    return nil
+}
+
+func errorCodeInData(data: NSData?) -> ErrorCode? {
+    if let data = data {
+        if let json = decodeJSON(data) {
+            println("error json: \(json)")
+            if let errorCodeString = json["code"] as? String {
+                return ErrorCode(rawValue: errorCodeString)
             }
         }
     }

@@ -8,25 +8,30 @@
 
 import UIKit
 import RealmSwift
+import CoreSpotlight
 
-let v1AccessTokenKey = "v1AccessToken"
-let userIDKey = "userID"
-let nicknameKey = "nickname"
-let introductionKey = "introduction"
-let avatarURLStringKey = "avatarURLString"
-let badgeKey = "badge"
-let pusherIDKey = "pusherID"
+private let v1AccessTokenKey = "v1AccessToken"
+private let userIDKey = "userID"
+private let nicknameKey = "nickname"
+private let introductionKey = "introduction"
+private let avatarURLStringKey = "avatarURLString"
+private let badgeKey = "badge"
+private let blogURLStringKey = "blogURLString"
+private let blogTitleKey = "blogTitle"
+private let pusherIDKey = "pusherID"
 
-let areaCodeKey = "areaCode"
-let mobileKey = "mobile"
+private let areaCodeKey = "areaCode"
+private let mobileKey = "mobile"
 
-let discoveredUserSortStyleKey = "discoveredUserSortStyle"
-let feedSortStyleKey = "feedSortStyle"
+private let discoveredUserSortStyleKey = "discoveredUserSortStyle"
+private let feedSortStyleKey = "feedSortStyle"
 
-let latitudeShiftKey = "latitudeShift"
-let longitudeShiftKey = "longitudeShift"
+private let latitudeShiftKey = "latitudeShift"
+private let longitudeShiftKey = "longitudeShift"
 
-let userLocationNameKey = "userLocationName"
+private let userLocationNameKey = "userLocationName"
+
+private let syncedConversationsKey = "syncedConversations"
 
 struct Listener<T>: Hashable {
     let name: String
@@ -43,7 +48,7 @@ func ==<T>(lhs: Listener<T>, rhs: Listener<T>) -> Bool {
     return lhs.name == rhs.name
 }
 
-class Listenable<T> {
+final class Listenable<T> {
     var value: T {
         didSet {
             setterAction(value)
@@ -103,6 +108,34 @@ class YepUserDefaults {
         }
     }
 
+    static var isSyncedConversations: Bool {
+
+        if let syncedConversations = YepUserDefaults.syncedConversations.value {
+            return syncedConversations
+        } else {
+            return false
+        }
+    }
+
+    static var blogString: String? {
+
+        if let blogURLString = YepUserDefaults.blogURLString.value {
+
+            guard !blogURLString.isEmpty else {
+                return nil
+            }
+
+            if let blogTitle = YepUserDefaults.blogTitle.value where !blogTitle.isEmpty {
+                return blogTitle
+
+            } else {
+                return blogURLString
+            }
+        }
+
+        return nil
+    }
+
     // MARK: ReLogin
 
     class func cleanAllUserDefaults() {
@@ -113,6 +146,8 @@ class YepUserDefaults {
         introduction.removeAllListeners()
         avatarURLString.removeAllListeners()
         badge.removeAllListeners()
+        blogURLString.removeAllListeners()
+        blogTitle.removeAllListeners()
         pusherID.removeAllListeners()
         areaCode.removeAllListeners()
         mobile.removeAllListeners()
@@ -121,23 +156,21 @@ class YepUserDefaults {
         latitudeShift.removeAllListeners()
         longitudeShift.removeAllListeners()
         userLocationName.removeAllListeners()
+        syncedConversations.removeAllListeners()
 
-        defaults.removeObjectForKey(v1AccessTokenKey)
-        defaults.removeObjectForKey(userIDKey)
-        defaults.removeObjectForKey(nicknameKey)
-        defaults.removeObjectForKey(introductionKey)
-        defaults.removeObjectForKey(avatarURLStringKey)
-        defaults.removeObjectForKey(badgeKey)
-        defaults.removeObjectForKey(pusherIDKey)
-        defaults.removeObjectForKey(areaCodeKey)
-        defaults.removeObjectForKey(mobileKey)
-        defaults.removeObjectForKey(discoveredUserSortStyleKey)
-        defaults.removeObjectForKey(feedSortStyleKey)
-        defaults.removeObjectForKey(latitudeShiftKey)
-        defaults.removeObjectForKey(longitudeShiftKey)
-        defaults.removeObjectForKey(userLocationNameKey)
+        // reset suite
 
+        let dict = defaults.dictionaryRepresentation()
+        dict.keys.forEach({
+            defaults.removeObjectForKey($0)
+        })
         defaults.synchronize()
+
+        // reset standardUserDefaults
+
+        let standardUserDefaults = NSUserDefaults.standardUserDefaults()
+        standardUserDefaults.removePersistentDomainForName(NSBundle.mainBundle().bundleIdentifier!)
+        standardUserDefaults.synchronize()
     }
 
     class func maybeUserNeedRelogin() {
@@ -146,17 +179,23 @@ class YepUserDefaults {
             return
         }
 
+        CSSearchableIndex.defaultSearchableIndex().deleteAllSearchableItemsWithCompletionHandler(nil)
+
+        guard let appDelegate = UIApplication.sharedApplication().delegate as? AppDelegate where appDelegate.inMainStory else {
+            return
+        }
+
+        unregisterThirdPartyPush()
+
         cleanAllUserDefaults()
 
         cleanRealmAndCaches()
 
-        if let appDelegate = UIApplication.sharedApplication().delegate as? AppDelegate {
-            if let rootViewController = appDelegate.window?.rootViewController {
-                YepAlert.alert(title: NSLocalizedString("Sorry", comment: ""), message: NSLocalizedString("User authentication error, you need to login again!", comment: ""), dismissTitle: NSLocalizedString("Relogin", comment: ""), inViewController: rootViewController, withDismissAction: { () -> Void in
+        if let rootViewController = appDelegate.window?.rootViewController {
+            YepAlert.alert(title: NSLocalizedString("Sorry", comment: ""), message: NSLocalizedString("User authentication error, you need to login again!", comment: ""), dismissTitle: NSLocalizedString("Relogin", comment: ""), inViewController: rootViewController, withDismissAction: { () -> Void in
 
-                    appDelegate.startShowStory()
-                })
-            }
+                appDelegate.startShowStory()
+            })
         }
     }
 
@@ -268,6 +307,48 @@ class YepUserDefaults {
         }
     }()
 
+    static var blogURLString: Listenable<String?> = {
+        let blogURLString = defaults.stringForKey(blogURLStringKey)
+
+        return Listenable<String?>(blogURLString) { blogURLString in
+            defaults.setObject(blogURLString, forKey: blogURLStringKey)
+
+            guard let realm = try? Realm() else {
+                return
+            }
+
+            if let
+                blogURLString = blogURLString,
+                myUserID = YepUserDefaults.userID.value,
+                me = userWithUserID(myUserID, inRealm: realm) {
+                let _ = try? realm.write {
+                    me.blogURLString = blogURLString
+                }
+            }
+        }
+    }()
+
+    static var blogTitle: Listenable<String?> = {
+        let blogTitle = defaults.stringForKey(blogTitleKey)
+
+        return Listenable<String?>(blogTitle) { blogTitle in
+            defaults.setObject(blogTitle, forKey: blogTitleKey)
+
+            guard let realm = try? Realm() else {
+                return
+            }
+
+            if let
+                blogTitle = blogTitle,
+                myUserID = YepUserDefaults.userID.value,
+                me = userWithUserID(myUserID, inRealm: realm) {
+                let _ = try? realm.write {
+                    me.blogTitle = blogTitle
+                }
+            }
+        }
+    }()
+
     static var pusherID: Listenable<String?> = {
         let pusherID = defaults.stringForKey(pusherIDKey)
 
@@ -350,6 +431,14 @@ class YepUserDefaults {
 
         return Listenable<String?>(userLocationName) { userLocationName in
             defaults.setObject(userLocationName, forKey: userLocationNameKey)
+        }
+    }()
+
+    static var syncedConversations: Listenable<Bool?> = {
+        let syncedConversations = defaults.boolForKey(syncedConversationsKey)
+
+        return Listenable<Bool?>(syncedConversations) { syncedConversations in
+            defaults.setObject(syncedConversations, forKey: syncedConversationsKey)
         }
     }()
 }

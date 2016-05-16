@@ -11,7 +11,7 @@ import RealmSwift
 import MapKit
 import Kingfisher
 
-class ImageCache {
+final class ImageCache {
 
     static let sharedInstance = ImageCache()
 
@@ -19,6 +19,14 @@ class ImageCache {
     let cacheQueue = dispatch_queue_create("ImageCacheQueue", DISPATCH_QUEUE_SERIAL)
     let cacheAttachmentQueue = dispatch_queue_create("ImageCacheAttachmentQueue", DISPATCH_QUEUE_SERIAL)
 //    let cacheQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)
+
+    class func attachmentOriginKeyWithURLString(URLString: String) -> String {
+        return "attachment-0.0-\(URLString)"
+    }
+
+    class func attachmentSideLengthKeyWithURLString(URLString: String, sideLength: CGFloat) -> String {
+        return "attachment-\(sideLength)-\(URLString)"
+    }
     
     func imageOfAttachment(attachment: DiscoveredAttachment, withMinSideLength: CGFloat?, completion: (url: NSURL, image: UIImage?, cacheType: CacheType) -> Void) {
 
@@ -32,9 +40,9 @@ class ImageCache {
             sideLength = withMinSideLength
         }
         
-        let attachmentOriginKey = "attachment-0.0-\(attachmentURL.absoluteString)"
+        let attachmentOriginKey = ImageCache.attachmentOriginKeyWithURLString(attachmentURL.absoluteString)
 
-        let attachmentSideLengthKey = "attachment-\(sideLength)-\(attachmentURL.absoluteString)"
+        let attachmentSideLengthKey = ImageCache.attachmentSideLengthKeyWithURLString(attachmentURL.absoluteString, sideLength: sideLength)
 
         //println("attachmentSideLengthKey: \(attachmentSideLengthKey)")
 
@@ -118,7 +126,9 @@ class ImageCache {
 
     func imageOfMessage(message: Message, withSize size: CGSize, tailDirection: MessageImageTailDirection, completion: (loadingProgress: Double, image: UIImage?) -> Void) {
 
-        let imageKey = "image-\(message.messageID)-\(message.localAttachmentName)-\(message.attachmentURLString)"
+        //let imageKey = "image-\(message.messageID)-\(message.localAttachmentName)-\(message.attachmentURLString)"
+        let imageKey = message.imageKey
+
         // 先看看缓存
         if let image = cache.objectForKey(imageKey) as? UIImage {
             completion(loadingProgress: 1.0, image: image)

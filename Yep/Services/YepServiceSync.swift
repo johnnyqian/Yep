@@ -66,6 +66,10 @@ func getOrCreateUserWithDiscoverUser(discoveredUser: DiscoveredUser, inRealm rea
         if let badge = discoveredUser.badge {
             user.badge = badge
         }
+
+        if let blogURLString = discoveredUser.blogURLString {
+            user.blogURLString = blogURLString
+        }
     }
 
     return user
@@ -355,7 +359,7 @@ func syncMyInfoAndDoFurtherAction(furtherAction: () -> Void) {
                         YepUserDefaults.nickname.value = nickname
                     }
 
-                    if let introduction = friendInfo["introduction"] as? String {
+                    if let introduction = friendInfo["introduction"] as? String where !introduction.isEmpty {
                         YepUserDefaults.introduction.value = introduction
                     }
 
@@ -365,6 +369,14 @@ func syncMyInfoAndDoFurtherAction(furtherAction: () -> Void) {
 
                     if let badge = friendInfo["badge"] as? String {
                         YepUserDefaults.badge.value = badge
+                    }
+
+                    if let blogURLString = friendInfo["website_url"] as? String where !blogURLString.isEmpty {
+                        YepUserDefaults.blogURLString.value = blogURLString
+                    }
+
+                    if let blogTitle = friendInfo["website_title"] as? String where !blogTitle.isEmpty {
+                        YepUserDefaults.blogTitle.value = blogTitle
                     }
 
                     if let areaCode = friendInfo["phone_code"] as? String {
@@ -380,6 +392,80 @@ func syncMyInfoAndDoFurtherAction(furtherAction: () -> Void) {
             furtherAction()
         }
     })
+}
+
+func syncMyConversations(maxMessageID maxMessageID: String? = nil) {
+
+    myConversations(maxMessageID: maxMessageID, failureHandler: nil) { result in
+
+        guard let realm = try? Realm() else {
+            return
+        }
+
+        realm.beginWrite()
+
+        if let userInfos = result["users"] as? [JSONDictionary] {
+
+            let discoveredUsers = userInfos.map({ parseDiscoveredUser($0) }).flatMap({ $0 })
+
+            discoveredUsers.forEach({
+                _ = conversationWithDiscoveredUser($0, inRealm: realm)
+            })
+
+            dispatch_async(dispatch_get_main_queue()) {
+                NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedConversation, object: nil)
+            }
+        }
+
+        if let groupInfos = result["circles"] as? [JSONDictionary] {
+
+            groupInfos.forEach({
+                syncFeedGroupWithGroupInfo($0, inRealm: realm)
+            })
+
+            dispatch_async(dispatch_get_main_queue()) {
+                NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedFeedConversation, object: nil)
+            }
+        }
+
+        var lastMessageID: String?
+
+        if let messageInfos = result["messages"] as? [JSONDictionary] {
+
+            messageInfos.forEach({
+                syncMessageWithMessageInfo($0, messageAge: .Old, inRealm: realm) { _ in
+                }
+            })
+
+            let messageIDs: [String] = messageInfos.map({ $0["id"] as? String }).flatMap({ $0 })
+            messageIDs.forEach({
+                if let message = messageWithMessageID($0, inRealm: realm) {
+                    if let conversation = message.conversation {
+                        conversation.updatedUnixTime = message.createdUnixTime
+                    }
+                }
+            })
+
+            lastMessageID = messageIDs.last
+        }
+
+        let _ = try? realm.commitWrite()
+
+        dispatch_async(dispatch_get_main_queue()) {
+            NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedConversation, object: nil)
+            NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedFeedConversation, object: nil)
+        }
+
+        if let lastMessageID =  lastMessageID {
+            if let count = result["count"] as? Int, perPage = result["per_page"] as? Int {
+                if count > perPage {
+                    syncMyConversations(maxMessageID: lastMessageID)
+                }
+            }
+        }
+
+        YepUserDefaults.syncedConversations.value = true
+    }
 }
 
 func syncFriendshipsAndDoFurtherAction(furtherAction: () -> Void) {
@@ -399,27 +485,35 @@ func syncFriendshipsAndDoFurtherAction(furtherAction: () -> Void) {
                 }
             }
 
-            // 改变没有 friendship 的 user 的状态
-
             guard let realm = try? Realm() else {
                 return
             }
 
             let localUsers = realm.objects(User)
 
+            do {
+                let localUserIDSet = Set<String>(localUsers.map({ $0.userID }))
+                let userIDs = Array(localUserIDSet.subtract(remoteUerIDSet))
+                deleteSearchableItems(searchableItemType: .User, itemIDs: userIDs)
+            }
+
             // 一个大的写入，减少 realm 发通知
 
             realm.beginWrite()
 
+            // 改变没有 friendship 的 user 的状态
+
             for i in 0..<localUsers.count {
                 let localUser = localUsers[i]
 
-                if !remoteUerIDSet.contains(localUser.userID) {
+                let localUserID = localUser.userID
+
+                if !remoteUerIDSet.contains(localUserID) {
 
                     localUser.friendshipID = ""
 
                     if let myUserID = YepUserDefaults.userID.value {
-                        if myUserID == localUser.userID {
+                        if myUserID == localUserID {
                             localUser.friendState = UserFriendState.Me.rawValue
 
                         } else if localUser.friendState == UserFriendState.Normal.rawValue {
@@ -488,6 +582,7 @@ func syncGroupsAndDoFurtherAction(furtherAction: () -> Void) {
     groups(failureHandler: nil) { allGroups in
 
         //println("allGroups: \(allGroups)")
+        println("allGroups.count: \(allGroups.count)")
         
         dispatch_async(realmQueue) {
 
@@ -521,6 +616,11 @@ func syncGroupsAndDoFurtherAction(furtherAction: () -> Void) {
                 }
             }
 
+            do {
+                let feedIDs = groupsToDelete.map({ $0.withFeed?.feedID }).flatMap({ $0 })
+                deleteSearchableItems(searchableItemType: .Feed, itemIDs: feedIDs)
+            }
+
             for group in groupsToDelete {
 
                 // 有关联的 Feed 时就标记，不然删除
@@ -534,6 +634,7 @@ func syncGroupsAndDoFurtherAction(furtherAction: () -> Void) {
                         // 确保被删除的 Feed 的所有消息都被标记已读，重置 mentionedMe
                         group.conversation?.messages.forEach { $0.readed = true }
                         group.conversation?.mentionedMe = false
+                        group.conversation?.hasUnreadMessages = false
                     }
 
                 } else {
@@ -544,22 +645,7 @@ func syncGroupsAndDoFurtherAction(furtherAction: () -> Void) {
             // 增加本地没有的 Group
 
             for groupInfo in allGroups {
-
-                let group = syncGroupWithGroupInfo(groupInfo, inRealm: realm)
-
-                group?.includeMe = true
-
-                //Sync Feed
-
-                if let
-                    feedInfo = groupInfo["topic"] as? JSONDictionary,
-                    feed = DiscoveredFeed.fromFeedInfo(feedInfo, groupInfo: groupInfo),
-                    group = group {
-                        //saveFeedWithFeedDataWithFullGroup(feedData, group: group, inRealm: realm)
-                        saveFeedWithDiscoveredFeed(feed, group: group, inRealm: realm)
-                } else {
-                    println("no sync feed from groupInfo: \(groupInfo)")
-                }
+                syncFeedGroupWithGroupInfo(groupInfo, inRealm: realm)
             }
 
             let _ = try? realm.commitWrite()
@@ -572,6 +658,25 @@ func syncGroupsAndDoFurtherAction(furtherAction: () -> Void) {
             
             furtherAction()
         }
+    }
+}
+
+func syncFeedGroupWithGroupInfo(groupInfo: JSONDictionary, inRealm realm: Realm) {
+
+    let group = syncGroupWithGroupInfo(groupInfo, inRealm: realm)
+
+    group?.includeMe = true
+
+    //Sync Feed
+
+    if let
+        feedInfo = groupInfo["topic"] as? JSONDictionary,
+        feed = DiscoveredFeed.fromFeedInfo(feedInfo, groupInfo: groupInfo),
+        group = group {
+        saveFeedWithDiscoveredFeed(feed, group: group, inRealm: realm)
+
+    } else {
+        println("no sync feed from groupInfo: \(groupInfo)")
     }
 }
 
@@ -601,6 +706,7 @@ func syncGroupWithGroupInfo(groupInfo: JSONDictionary, inRealm realm: Realm) -> 
             } else {
                 group.groupType = GroupType.Private.rawValue
             }
+            println("group.groupType: \(group.groupType)")
 
             if group.conversation == nil {
                 let conversation = Conversation()
@@ -608,7 +714,7 @@ func syncGroupWithGroupInfo(groupInfo: JSONDictionary, inRealm realm: Realm) -> 
                 conversation.withGroup = group
 
                 if let updatedUnixTime = groupInfo["updated_at"] as? NSTimeInterval {
-                    conversation.updatedUnixTime = updatedUnixTime
+                    conversation.updatedUnixTime = max(updatedUnixTime, conversation.updatedUnixTime)
                 }
 
                 realm.add(conversation)
@@ -770,7 +876,7 @@ func syncUnreadMessagesAndDoFurtherAction(furtherAction: (messageIDs: [String]) 
                 realm.beginWrite()
                 
                 for messageInfo in allUnreadMessages {
-                    syncMessageWithMessageInfo(messageInfo, messageAge: .New, inRealm: realm) { _messageIDs in
+                    syncMessageWithMessageInfo(messageInfo, messageAge: .Old, inRealm: realm) { _messageIDs in
                         messageIDs += _messageIDs
                     }
                 }
@@ -800,12 +906,8 @@ func recordMessageWithMessageID(messageID: String, detailInfo messageInfo: JSOND
             return
         }
 
-        if let user = message.fromFriend where user.userID == YepUserDefaults.userID.value {
+        if let user = message.fromFriend where user.isMe {
             message.sendState = MessageSendState.Read.rawValue
-        }
-
-        if let state = messageInfo["state"] as? String where state == "read" {
-            message.readed = true
         }
 
         if let textContent = messageInfo["text_content"] as? String {
@@ -813,8 +915,16 @@ func recordMessageWithMessageID(messageID: String, detailInfo messageInfo: JSOND
 
             if let conversation = message.conversation where !conversation.mentionedMe {
                 if textContent.yep_mentionedMeInRealm(realm) {
-                    conversation.mentionedMe = true
+                    if message.createdUnixTime > conversation.lastMentionedMeUnixTime {
+                        conversation.mentionedMe = true
+                        conversation.lastMentionedMeUnixTime = NSDate().timeIntervalSince1970
+                        println("new mentionedMe")
+                    } else {
+                        println("old mentionedMe: \(message.createdUnixTime), \(conversation.lastMentionedMeUnixTime)")
+                    }
                 }
+            } else {
+                println("failed mentionedMe: \(message.conversation?.mentionedMe)")
             }
         }
 
@@ -880,7 +990,7 @@ func recordMessageWithMessageID(messageID: String, detailInfo messageInfo: JSOND
     }
 }
 
-func syncMessageWithMessageInfo(messageInfo: JSONDictionary, messageAge: MessageAge, inRealm realm: Realm, andDoFurtherAction furtherAction: ((messageIDs: [String]) -> Void)? ) {
+func syncMessageWithMessageInfo(messageInfo: JSONDictionary, messageAge: MessageAge, inRealm realm: Realm, andDoFurtherAction furtherAction: ((messageIDs: [String]) -> Void)?) {
 
     if let messageID = messageInfo["id"] as? String {
 
@@ -905,17 +1015,20 @@ func syncMessageWithMessageInfo(messageInfo: JSONDictionary, messageAge: Message
             let newMessage = Message()
             newMessage.messageID = messageID
 
-            if let updatedUnixTime = messageInfo["created_at"] as? NSTimeInterval {
-                newMessage.createdUnixTime = updatedUnixTime
+            if let createdUnixTime = messageInfo["created_at"] as? NSTimeInterval {
+                newMessage.createdUnixTime = createdUnixTime
             }
 
             if case .New = messageAge {
                 // 确保网络来的新消息比任何已有的消息都要新，防止服务器消息延后发来导致插入到当前消息上面
                 if let latestMessage = realm.objects(Message).sorted("createdUnixTime", ascending: true).last {
                     if newMessage.createdUnixTime < latestMessage.createdUnixTime {
-                        println("before newMessage.createdUnixTime: \(newMessage.createdUnixTime)")
-                        newMessage.createdUnixTime = latestMessage.createdUnixTime + YepConfig.Message.localNewerTimeInterval
-                        println("adjust newMessage.createdUnixTime: \(newMessage.createdUnixTime)")
+                        // 只考虑最近的消息，过了可能混乱的时机就不再考虑
+                        if abs(newMessage.createdUnixTime - latestMessage.createdUnixTime) < 60 {
+                            println("xbefore newMessage.createdUnixTime: \(newMessage.createdUnixTime)")
+                            newMessage.createdUnixTime = latestMessage.createdUnixTime + YepConfig.Message.localNewerTimeInterval
+                            println("xadjust newMessage.createdUnixTime: \(newMessage.createdUnixTime)")
+                        }
                     }
                 }
             }
@@ -1086,20 +1199,36 @@ func syncMessageWithMessageInfo(messageInfo: JSONDictionary, messageAge: Message
 
                         if let conversation = conversation {
 
-                            var sectionDateMessageID: String?
+                            // 先同步 read 状态
+                            if let sender = message.fromFriend where sender.isMe {
+                                message.readed = true
 
-                            conversation.updatedUnixTime = message.createdUnixTime
+                            } else if let state = messageInfo["state"] as? String where state == "read" {
+                                message.readed = true
+                            }
 
+                            // 再设置 conversation，调节 hasUnreadMessages 需要判定 readed
+                            if message.conversation == nil && message.readed == false && message.createdUnixTime > conversation.updatedUnixTime {
+
+                                println("ThreeUnixTime: \nc:\(message.createdUnixTime)\nu:\(conversation.updatedUnixTime)\nn:\(NSDate().timeIntervalSince1970)")
+
+                                // 不考虑特别旧的消息
+                                if message.createdUnixTime > (NSDate().timeIntervalSince1970 - 60*60*12) {
+                                    conversation.hasUnreadMessages = true
+                                    conversation.updatedUnixTime = NSDate().timeIntervalSince1970
+                                }
+                            }
                             message.conversation = conversation
+
+                            // 最后纪录消息余下的 detail 信息（其中设置 mentionedMe 需要 conversation）
+                            recordMessageWithMessageID(messageID, detailInfo: messageInfo, inRealm: realm)
+
+                            var sectionDateMessageID: String?
 
                             tryCreateSectionDateMessageInConversation(conversation, beforeMessage: message, inRealm: realm) { sectionDateMessage in
                                 realm.add(sectionDateMessage)
                                 sectionDateMessageID = sectionDateMessage.messageID
                             }
-
-                            // 纪录消息的 detail 信息
-
-                            recordMessageWithMessageID(messageID, detailInfo: messageInfo, inRealm: realm)
 
                             if createdNewConversation {
 

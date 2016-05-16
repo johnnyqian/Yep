@@ -40,7 +40,7 @@ extension String {
     }
 
     var yep_removeAllWhitespaces: String {
-        return self.stringByReplacingOccurrencesOfString(" ", withString: "")
+        return self.stringByReplacingOccurrencesOfString(" ", withString: "").stringByReplacingOccurrencesOfString(" ", withString: "")
     }
 
     var yep_removeAllNewLines: String {
@@ -121,7 +121,7 @@ extension String {
         var wordString: String?
         var wordRange: Range<Index>?
 
-        self.enumerateSubstringsInRange(Range<Index>(start: startIndex, end: endIndex), options: [.ByWords, .Reverse]) { (substring, substringRange, enclosingRange, stop) -> () in
+        self.enumerateSubstringsInRange(startIndex..<endIndex, options: [.ByWords, .Reverse]) { (substring, substringRange, enclosingRange, stop) -> () in
 
             //println("substring: \(substring)")
             //println("substringRange: \(substringRange)")
@@ -142,7 +142,7 @@ extension String {
             return nil
         }
 
-        let mentionWordRange = Range<Index>(start: _wordRange.startIndex.advancedBy(-1), end: _wordRange.endIndex)
+        let mentionWordRange = _wordRange.startIndex.advancedBy(-1)..<_wordRange.endIndex
 
         let mentionWord = substringWithRange(mentionWordRange)
 
@@ -200,3 +200,159 @@ extension String {
     }
 }
 
+extension String {
+
+    func yep_hightlightSearchKeyword(keyword: String, baseFont: UIFont, baseColor: UIColor) -> NSAttributedString? {
+
+        return yep_highlightKeyword(keyword, withColor: UIColor.yepTintColor(), baseFont: baseFont, baseColor: baseColor)
+    }
+
+    func yep_highlightKeyword(keyword: String, withColor color: UIColor, baseFont: UIFont, baseColor: UIColor) -> NSAttributedString? {
+
+        guard !keyword.isEmpty else {
+            return nil
+        }
+
+        let text = self
+        let attributedString = NSMutableAttributedString(string: text)
+        let textRange = NSMakeRange(0, (text as NSString).length)
+
+        attributedString.addAttribute(NSForegroundColorAttributeName, value: baseColor, range: textRange)
+        attributedString.addAttribute(NSFontAttributeName, value: baseFont, range: textRange)
+
+        // highlight keyword
+
+        let highlightTextAttributes: [String: AnyObject] = [
+            NSForegroundColorAttributeName: color,
+        ]
+
+        let highlightExpression = try! NSRegularExpression(pattern: keyword, options: [.CaseInsensitive])
+
+        highlightExpression.enumerateMatchesInString(text, options: NSMatchingOptions(), range: textRange, usingBlock: { result, flags, stop in
+
+            if let result = result {
+                attributedString.addAttributes(highlightTextAttributes, range: result.range )
+            }
+        })
+
+        return attributedString
+    }
+
+    func yep_keywordSetOfEmphasisTags() -> Set<String> {
+
+        let text = self
+        let textRange = NSMakeRange(0, (text as NSString).length)
+
+        let keywordExpression = try! NSRegularExpression(pattern: "<em>(.+?)</em>", options: [.CaseInsensitive])
+
+        let matches = keywordExpression.matchesInString(self, options: [], range: textRange)
+        let keywords: [String] = matches.map({
+            let matchRange = $0.rangeAtIndex(1)
+            let keyword = (text as NSString).substringWithRange(matchRange)
+            return keyword.lowercaseString
+        })
+
+        let keywordSet = Set(keywords)
+        return keywordSet
+    }
+
+    func yep_highlightWithKeywordSet(keywordSet: Set<String>, color: UIColor, baseFont: UIFont, baseColor: UIColor) -> NSAttributedString? {
+
+        let text = self
+        let textRange = NSMakeRange(0, (self as NSString).length)
+
+        let attributedString = NSMutableAttributedString(string: text)
+
+        attributedString.addAttribute(NSForegroundColorAttributeName, value: baseColor, range: textRange)
+        attributedString.addAttribute(NSFontAttributeName, value: baseFont, range: textRange)
+
+        let highlightTextAttributes: [String: AnyObject] = [
+            NSForegroundColorAttributeName: color,
+        ]
+
+        keywordSet.forEach({
+            if let highlightExpression = try? NSRegularExpression(pattern: $0, options: [.CaseInsensitive]) {
+
+                highlightExpression.enumerateMatchesInString(text, options: NSMatchingOptions(), range: textRange, usingBlock: { result, flags, stop in
+
+                    if let result = result {
+                        attributedString.addAttributes(highlightTextAttributes, range: result.range )
+                    }
+                })
+            }
+        })
+
+        return attributedString
+    }
+
+    /*
+    func yep_highlightEmphasisTagWithColor(color: UIColor, baseFont: UIFont, baseColor: UIColor) -> NSAttributedString? {
+
+        let text = self
+        let textRange = NSMakeRange(0, (text as NSString).length)
+
+        let keywordExpression = try! NSRegularExpression(pattern: "<em>(.+?)</em>", options: [.CaseInsensitive])
+
+        let matches = keywordExpression.matchesInString(self, options: [], range: textRange)
+        let keywords: [String] = matches.map({
+            let matchRange = $0.rangeAtIndex(1)
+            let keyword = (text as NSString).substringWithRange(matchRange)
+            return keyword.lowercaseString
+        })
+
+        guard !keywords.isEmpty else {
+            return nil
+        }
+
+        let keywordSet = Set(keywords)
+
+        println("EmphasisTag keywords: \(keywords)")
+        println("EmphasisTag keywordSet: \(keywordSet)")
+
+        guard !keywordSet.isEmpty else {
+            return nil
+        }
+
+        let emphasisTagExpression = try! NSRegularExpression(pattern: "</?em>", options: [.CaseInsensitive])
+        let encodedString = emphasisTagExpression.stringByReplacingMatchesInString(text, options: [], range: textRange, withTemplate: "")
+
+        println("EmphasisTag encodedString: \(encodedString)")
+
+        let encodedData = encodedString.dataUsingEncoding(NSUTF8StringEncoding)!
+        let attributedOptions: [String: AnyObject] = [
+            NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType,
+            NSCharacterEncodingDocumentAttribute: NSUTF8StringEncoding
+        ]
+        guard let decodedString = try? NSAttributedString(data: encodedData, options: attributedOptions, documentAttributes: nil).string else {
+            return nil
+        }
+
+        println("EmphasisTag decodedString: \(decodedString)")
+
+        let decodedStringRange = NSMakeRange(0, (decodedString as NSString).length)
+
+        let attributedString = NSMutableAttributedString(string: decodedString)
+
+        attributedString.addAttribute(NSForegroundColorAttributeName, value: baseColor, range: decodedStringRange)
+        attributedString.addAttribute(NSFontAttributeName, value: baseFont, range: decodedStringRange)
+
+        let highlightTextAttributes: [String: AnyObject] = [
+            NSForegroundColorAttributeName: color,
+        ]
+
+        keywordSet.forEach({
+            if let highlightExpression = try? NSRegularExpression(pattern: $0, options: [.CaseInsensitive]) {
+
+                highlightExpression.enumerateMatchesInString(decodedString, options: NSMatchingOptions(), range: decodedStringRange, usingBlock: { result, flags, stop in
+
+                    if let result = result {
+                        attributedString.addAttributes(highlightTextAttributes, range: result.range )
+                    }
+                })
+            }
+        })
+        
+        return attributedString
+    }
+     */
+}

@@ -9,7 +9,7 @@
 import UIKit
 import Ruler
 
-class RegisterVerifyMobileViewController: SegueViewController {
+final class RegisterVerifyMobileViewController: SegueViewController {
 
     var mobile: String!
     var areaCode: String!
@@ -28,12 +28,12 @@ class RegisterVerifyMobileViewController: SegueViewController {
     @IBOutlet private weak var callMeButtonTopConstraint: NSLayoutConstraint!
 
     private lazy var nextButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(title: NSLocalizedString("Next", comment: ""), style: .Plain, target: self, action: "next:")
+        let button = UIBarButtonItem(title: NSLocalizedString("Next", comment: ""), style: .Plain, target: self, action: #selector(RegisterVerifyMobileViewController.next(_:)))
         return button
     }()
     
     private lazy var callMeTimer: NSTimer = {
-        let timer = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: "tryCallMe:", userInfo: nil, repeats: true)
+        let timer = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: #selector(RegisterVerifyMobileViewController.tryCallMe(_:)), userInfo: nil, repeats: true)
         return timer
     }()
 
@@ -53,13 +53,13 @@ class RegisterVerifyMobileViewController: SegueViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = UIColor.yepViewBackgroundColor()
+        view.backgroundColor = UIColor.yepViewBackgroundColor() 
 
         navigationItem.titleView = NavigationTitleLabel(title: NSLocalizedString("Sign up", comment: ""))
 
         navigationItem.rightBarButtonItem = nextButton
 
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: "activeAgain:", name: AppDelegate.Notification.applicationDidBecomeActive, object: nil)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(RegisterVerifyMobileViewController.activeAgain(_:)), name: AppDelegate.Notification.applicationDidBecomeActive, object: nil)
 
         verifyMobileNumberPromptLabel.text = NSLocalizedString("Input verification code sent to", comment: "")
         phoneNumberLabel.text = "+" + areaCode + " " + mobile
@@ -68,7 +68,7 @@ class RegisterVerifyMobileViewController: SegueViewController {
         verifyCodeTextField.backgroundColor = UIColor.whiteColor()
         verifyCodeTextField.textColor = UIColor.yepInputTextColor()
         verifyCodeTextField.delegate = self
-        verifyCodeTextField.addTarget(self, action: "textFieldDidChange:", forControlEvents: .EditingChanged)
+        verifyCodeTextField.addTarget(self, action: #selector(RegisterVerifyMobileViewController.textFieldDidChange(_:)), forControlEvents: .EditingChanged)
 
         callMePromptLabel.text = NSLocalizedString("Didn't get it?", comment: "")
         callMeButton.setTitle(NSLocalizedString("Call me", comment: ""), forState: .Normal)
@@ -122,7 +122,7 @@ class RegisterVerifyMobileViewController: SegueViewController {
         }
 
         if (callMeInSeconds > 1) {
-            callMeInSeconds--
+            callMeInSeconds -= 1
         }
     }
 

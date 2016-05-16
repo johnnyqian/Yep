@@ -8,7 +8,7 @@
 
 import UIKit
 
-class FeedGithubRepoContainerView: UIView {
+final class FeedGithubRepoContainerView: UIView {
 
     var tapAction: (() -> Void)?
 
@@ -53,7 +53,7 @@ class FeedGithubRepoContainerView: UIView {
 
         makeUI()
 
-        let tap = UITapGestureRecognizer(target: self, action: "tap:")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(FeedGithubRepoContainerView.tap(_:)))
         addGestureRecognizer(tap)
     }
 
@@ -74,7 +74,7 @@ class FeedGithubRepoContainerView: UIView {
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         accessoryImageView.translatesAutoresizingMaskIntoConstraints = false
 
-        let views = [
+        let views: [String: AnyObject] = [
             "backgroundImageView": backgroundImageView,
             "iconImageView": iconImageView,
             "nameLabel": nameLabel,

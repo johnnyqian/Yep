@@ -8,16 +8,15 @@
 
 import UIKit
 import Fabric
-import Crashlytics
 import AVFoundation
 import RealmSwift
 import MonkeyKing
 import Navi
 import Appsee
-
+import CoreSpotlight
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
@@ -41,10 +40,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 默认将 Realm 放在 App Group 里
 
         let directory: NSURL = NSFileManager.defaultManager().containerURLForSecurityApplicationGroupIdentifier(YepConfig.appGroupID)!
-        let realmPath = directory.URLByAppendingPathComponent("db.realm").path!
+        let realmFileURL = directory.URLByAppendingPathComponent("db.realm")
 
-        return Realm.Configuration(path: realmPath, schemaVersion: 26, migrationBlock: { migration, oldSchemaVersion in
-        })
+        var config = Realm.Configuration()
+        config.fileURL = realmFileURL
+        config.schemaVersion = 33
+        config.migrationBlock = { migration, oldSchemaVersion in
+        }
+
+        return config
     }
 
     enum RemoteNotificationType: String {
@@ -74,23 +78,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
 
+        BuddyBuildSDK.setup()
+
         Realm.Configuration.defaultConfiguration = realmConfig()
 
         cacheInAdvance()
 
         delay(0.5) {
             //Fabric.with([Crashlytics.self])
-            Fabric.with([Crashlytics.self, Appsee.self])
+            Fabric.with([Appsee.self])
 
-            /*
+            #if JPUSH
             #if STAGING
                 let apsForProduction = false
             #else
                 let apsForProduction = true
             #endif
             JPUSHService.setupWithOption(launchOptions, appKey: "e521aa97cd4cd4eba5b73669", channel: "AppStore", apsForProduction: apsForProduction)
-            */
-            APService.setupWithOption(launchOptions)
+            #endif
         }
         
         let _ = try? AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayAndRecord, withOptions: AVAudioSessionCategoryOptions.DefaultToSpeaker)
@@ -99,7 +104,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // 全局的外观自定义
         customAppearce()
-
+        
         let isLogined = YepUserDefaults.isLogined
 
         if isLogined {
@@ -115,38 +120,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } else {
             startShowStory()
         }
-        
+
         return true
-    }
-
-    func applicationWillResignActive(application: UIApplication) {
-        
-        println("Resign active")
-
-        UIApplication.sharedApplication().applicationIconBadgeNumber = 0
-    }
-
-    func applicationDidEnterBackground(application: UIApplication) {
-        
-        println("Enter background")
-
-        NSNotificationCenter.defaultCenter().postNotificationName(MessageToolbar.Notification.updateDraft, object: nil)
-
-        #if DEBUG
-        //clearUselessRealmObjects() // only for test
-        #endif
-    }
-
-    func applicationWillEnterForeground(application: UIApplication) {
-        // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-        
-        println("Will Foreground")
     }
 
     func applicationDidBecomeActive(application: UIApplication) {
 
         println("Did Active")
-        
+
         if !isFirstActive {
             syncUnreadMessages() {}
 
@@ -164,8 +145,46 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         */
 
         NSNotificationCenter.defaultCenter().postNotificationName(Notification.applicationDidBecomeActive, object: nil)
-
+        
         isFirstActive = false
+    }
+
+    func applicationWillResignActive(application: UIApplication) {
+
+        println("Resign active")
+
+        UIApplication.sharedApplication().applicationIconBadgeNumber = 0
+
+        // dynamic shortcut items
+
+        configureDynamicShortcuts()
+
+        // index searchable items
+
+        if YepUserDefaults.isLogined {
+            indexUserSearchableItems()
+            indexFeedSearchableItems()
+
+        } else {
+            CSSearchableIndex.defaultSearchableIndex().deleteAllSearchableItemsWithCompletionHandler(nil)
+        }
+    }
+
+    func applicationDidEnterBackground(application: UIApplication) {
+        
+        println("Enter background")
+
+        NSNotificationCenter.defaultCenter().postNotificationName(MessageToolbar.Notification.updateDraft, object: nil)
+
+        #if DEBUG
+        //clearUselessRealmObjects() // only for test
+        #endif
+    }
+
+    func applicationWillEnterForeground(application: UIApplication) {
+        // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
+
+        println("Will Foreground")
     }
 
     func applicationWillTerminate(application: UIApplication) {
@@ -204,10 +223,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             completionHandler()
         }
 
-        guard #available(iOS 9, *) else {
-            return
-        }
-
         guard let identifier = identifier else {
             return
         }
@@ -233,8 +248,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject], fetchCompletionHandler completionHandler: (UIBackgroundFetchResult) -> Void) {
 
         println("didReceiveRemoteNotification: \(userInfo)")
-        //JPUSHService.handleRemoteNotification(userInfo)
-        APService.handleRemoteNotification(userInfo)
+
+        #if JPUSH
+        JPUSHService.handleRemoteNotification(userInfo)
+        #endif
         
         guard YepUserDefaults.isLogined, let type = userInfo["type"] as? String, remoteNotificationType = RemoteNotificationType(rawValue: type) else {
             completionHandler(UIBackgroundFetchResult.NoData)
@@ -253,7 +270,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         case .Message:
 
             syncUnreadMessages() {
-                completionHandler(UIBackgroundFetchResult.NewData)
+                dispatch_async(dispatch_get_main_queue()) {
+                    NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedFeedConversation, object: nil)
+
+                    configureDynamicShortcuts()
+
+                    completionHandler(UIBackgroundFetchResult.NewData)
+                }
             }
 
         case .OfficialMessage:
@@ -292,14 +315,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
             handleMessageDeletedFromServer(messageID: messageID)
 
+            configureDynamicShortcuts()
+
         case .Mentioned:
 
             syncUnreadMessagesAndDoFurtherAction({ _ in
                 dispatch_async(dispatch_get_main_queue()) {
-                    NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedConversation, object: nil)
-                }
+                    NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.changedFeedConversation, object: nil)
 
-                completionHandler(UIBackgroundFetchResult.NewData)
+                    configureDynamicShortcuts()
+
+                    completionHandler(UIBackgroundFetchResult.NewData)
+                }
             })
         }
     }
@@ -309,11 +336,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         println(error.description)
     }
 
+    // MARK: Shortcuts
+
+    func application(application: UIApplication, performActionForShortcutItem shortcutItem: UIApplicationShortcutItem, completionHandler: (Bool) -> Void) {
+
+        handleShortcutItem(shortcutItem)
+
+        completionHandler(true)
+    }
+
+    private func handleShortcutItem(shortcutItem: UIApplicationShortcutItem) {
+
+        if let window = window {
+            tryQuickActionWithShortcutItem(shortcutItem, inWindow: window)
+        }
+    }
+
     // MARK: Open URL
 
     func application(application: UIApplication, openURL url: NSURL, sourceApplication: String?, annotation: AnyObject) -> Bool {
 
-        
         if url.absoluteString.contains("/auth/success") {
             
             NSNotificationCenter.defaultCenter().postNotificationName(YepConfig.Notification.OAuthResult, object: NSNumber(int: 1))
@@ -333,26 +375,43 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(application: UIApplication, continueUserActivity userActivity: NSUserActivity, restorationHandler: ([AnyObject]?) -> Void) -> Bool {
 
-        if userActivity.activityType == NSUserActivityTypeBrowsingWeb {
+        println("userActivity.activityType: \(userActivity.activityType)")
+        println("userActivity.userInfo: \(userActivity.userInfo)")
+
+        let activityType = userActivity.activityType
+
+        switch  activityType {
+
+        case NSUserActivityTypeBrowsingWeb:
 
             guard let webpageURL = userActivity.webpageURL else {
                 return false
             }
 
-            if !handleUniversalLink(webpageURL) {
-                UIApplication.sharedApplication().openURL(webpageURL)
+            return handleUniversalLink(webpageURL)
+
+        case CSSearchableItemActionType:
+                
+            guard let searchableItemID = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String else {
+                return false
             }
 
-//            if let webpageURL = userActivity.webpageURL {
-//                if !handleUniversalLink(webpageURL) {
-//                    UIApplication.sharedApplication().openURL(webpageURL)
-//                }
-//            } else {
-//                return false
-//            }
-        }
+            guard let (itemType, itemID) = searchableItem(searchableItemID: searchableItemID) else {
+                return false
+            }
 
-        return true
+            switch itemType {
+
+            case .User:
+                return handleUserSearchActivity(userID: itemID)
+
+            case .Feed:
+                return handleFeedSearchActivity(feedID: itemID)
+            }
+
+        default:
+            return false
+        }
     }
     
     private func handleUniversalLink(URL: NSURL) -> Bool {
@@ -370,7 +429,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             //println("matchSharedFeed: \(feed)")
 
             guard let
-                vc = UIStoryboard(name: "Main", bundle: nil).instantiateViewControllerWithIdentifier("ConversationViewController") as? ConversationViewController,
+                vc = UIStoryboard(name: "Conversation", bundle: nil).instantiateViewControllerWithIdentifier("ConversationViewController") as? ConversationViewController,
                 realm = try? Realm() else {
                     return
             }
@@ -379,16 +438,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             let feedConversation = vc.prepareConversationForFeed(feed, inRealm: realm)
             let _ = try? realm.commitWrite()
 
+            // 如果已经显示了就不用push
+            if let topVC = nvc.topViewController as? ConversationViewController, let oldFakeID = topVC.conversation?.fakeID, let newFakeID = feedConversation?.fakeID where newFakeID == oldFakeID {
+                return
+            }
+
             vc.conversation = feedConversation
             vc.conversationFeed = ConversationFeed.DiscoveredFeedType(feed)
 
-            nvc.pushViewController(vc, animated: true)
+            delay(0.25) {
+                nvc.pushViewController(vc, animated: true)
+            }
 
         // Profile (Last)
 
         }) || URL.yep_matchProfile({ discoveredUser in
 
             //println("matchProfile: \(discoveredUser)")
+
+            // 如果已经显示了就不用push
+            if let topVC = nvc.topViewController as? ProfileViewController, let userID = topVC.profileUser?.userID where userID == discoveredUser.id {
+                return
+            }
 
             guard let
                 vc = UIStoryboard(name: "Main", bundle: nil).instantiateViewControllerWithIdentifier("ProfileViewController") as? ProfileViewController else {
@@ -401,33 +472,95 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
             vc.hidesBottomBarWhenPushed = true
 
-            nvc.pushViewController(vc, animated: true)
+            delay(0.25) {
+                nvc.pushViewController(vc, animated: true)
+            }
         })
     }
 
+    private func handleUserSearchActivity(userID userID: String) -> Bool {
+
+        guard let
+            realm = try? Realm(),
+            user = userWithUserID(userID, inRealm: realm),
+            tabBarVC = window?.rootViewController as? UITabBarController,
+            nvc = tabBarVC.selectedViewController as? UINavigationController else {
+                return false
+        }
+
+        // 如果已经显示了就不用push
+        if let topVC = nvc.topViewController as? ProfileViewController, let _userID = topVC.profileUser?.userID where _userID == userID {
+            return true
+
+        } else {
+            guard let vc = UIStoryboard(name: "Main", bundle: nil).instantiateViewControllerWithIdentifier("ProfileViewController") as? ProfileViewController else {
+                return false
+            }
+
+            vc.profileUser = ProfileUser.UserType(user)
+            vc.fromType = .None
+            vc.setBackButtonWithTitle()
+
+            vc.hidesBottomBarWhenPushed = true
+
+            delay(0.25) {
+                nvc.pushViewController(vc, animated: true)
+            }
+
+            return true
+        }
+    }
+
+    private func handleFeedSearchActivity(feedID feedID: String) -> Bool {
+
+        guard let
+            realm = try? Realm(),
+            feed = feedWithFeedID(feedID, inRealm: realm),
+            conversation = feed.group?.conversation,
+            tabBarVC = window?.rootViewController as? UITabBarController,
+            nvc = tabBarVC.selectedViewController as? UINavigationController else {
+                return false
+        }
+
+        // 如果已经显示了就不用push
+        if let topVC = nvc.topViewController as? ConversationViewController, let feed = topVC.conversation?.withGroup?.withFeed where feed.feedID == feedID {
+            return true
+
+        } else {
+            guard let vc = UIStoryboard(name: "Conversation", bundle: nil).instantiateViewControllerWithIdentifier("ConversationViewController") as? ConversationViewController else {
+                return false
+            }
+
+            vc.conversation = conversation
+
+            delay(0.25) {
+                nvc.pushViewController(vc, animated: true)
+            }
+
+            return true
+        }
+    }
+
     // MARK: Public
+
+    var inMainStory: Bool = true
 
     func startShowStory() {
 
         let storyboard = UIStoryboard(name: "Show", bundle: nil)
         let rootViewController = storyboard.instantiateViewControllerWithIdentifier("ShowNavigationController") as! UINavigationController
         window?.rootViewController = rootViewController
-    }
 
-    /*
-    func startIntroStory() {
-
-        let storyboard = UIStoryboard(name: "Intro", bundle: nil)
-        let rootViewController = storyboard.instantiateViewControllerWithIdentifier("IntroNavigationController") as! UINavigationController
-        window?.rootViewController = rootViewController
+        inMainStory = false
     }
-    */
 
     func startMainStory() {
 
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let rootViewController = storyboard.instantiateViewControllerWithIdentifier("MainTabBarController") as! UITabBarController
         window?.rootViewController = rootViewController
+
+        inMainStory = true
     }
 
     func sync() {
@@ -435,7 +568,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         guard YepUserDefaults.isLogined else {
             return
         }
-        
+
+        refreshGroupTypeForAllGroups()
+
+        if !YepUserDefaults.isSyncedConversations {
+            syncMyConversations()
+        }
+
         syncUnreadMessages {
             syncFriendshipsAndDoFurtherAction {
                 syncGroupsAndDoFurtherAction {
@@ -456,16 +595,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
 
         dispatch_async(fayeQueue) {
-            FayeService.sharedManager.startConnect()
+            FayeService.sharedManager.tryStartConnect()
         }
     }
 
     func registerThirdPartyPushWithDeciveToken(deviceToken: NSData, pusherID: String) {
 
-        //JPUSHService.registerDeviceToken(deviceToken)
-        //JPUSHService.setTags(Set(["iOS"]), alias: pusherID, callbackSelector:nil, object: nil)
-        APService.registerDeviceToken(deviceToken)
-        APService.setTags(Set(["iOS"]), alias: pusherID, callbackSelector:nil, object: nil)
+        #if JPUSH
+        JPUSHService.registerDeviceToken(deviceToken)
+        JPUSHService.setTags(Set(["iOS"]), alias: pusherID, callbackSelector: nil, object: nil)
+        #endif
     }
 
     func tagsAliasCallback(iResCode: Int, tags: NSSet, alias: NSString) {
@@ -488,7 +627,58 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         sendText(text, toRecipient: recipientID, recipientType: recipientType, afterCreatedMessage: { _ in }, failureHandler: nil, completion: { success in
             println("reply to [\(recipientType): \(recipientID)], \(success)")
         })
-        
+    }
+
+    private func indexUserSearchableItems() {
+
+        let users = normalFriends()
+
+        let searchableItems = users.map({
+            CSSearchableItem(
+                uniqueIdentifier: searchableItemID(searchableItemType: .User, itemID: $0.userID),
+                domainIdentifier: userDomainIdentifier,
+                attributeSet: $0.attributeSet
+            )
+        })
+
+        println("userSearchableItems: \(searchableItems.count)")
+
+        CSSearchableIndex.defaultSearchableIndex().indexSearchableItems(searchableItems) { error in
+            if error != nil {
+                println(error!.localizedDescription)
+
+            } else {
+                println("indexUserSearchableItems OK")
+            }
+        }
+    }
+
+    private func indexFeedSearchableItems() {
+
+        guard let realm = try? Realm() else {
+            return
+        }
+
+        let feeds = filterValidFeeds(realm.objects(Feed))
+
+        let searchableItems = feeds.map({
+            CSSearchableItem(
+                uniqueIdentifier: searchableItemID(searchableItemType: .Feed, itemID: $0.feedID),
+                domainIdentifier: feedDomainIdentifier,
+                attributeSet: $0.attributeSet
+            )
+        })
+
+        println("feedSearchableItems: \(searchableItems.count)")
+
+        CSSearchableIndex.defaultSearchableIndex().indexSearchableItems(searchableItems) { error in
+            if error != nil {
+                println(error!.localizedDescription)
+
+            } else {
+                println("indexFeedSearchableItems OK")
+            }
+        }
     }
 
     private func syncUnreadMessages(furtherAction: () -> Void) {
@@ -538,6 +728,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     private func customAppearce() {
 
+        window?.backgroundColor = UIColor.whiteColor()
+
         // Global Tint Color
 
         window?.tintColor = UIColor.yepTintColor()
@@ -557,14 +749,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             return shadow
         }()
 
-        let textAttributes = [
+        let textAttributes: [String: AnyObject] = [
             NSForegroundColorAttributeName: UIColor.yepNavgationBarTitleColor(),
             NSShadowAttributeName: shadow,
             NSFontAttributeName: UIFont.navigationBarTitleFont()
         ]
 
         /*
-        let barButtonTextAttributes = [
+        let barButtonTextAttributes: [String: AnyObject] = [
             NSForegroundColorAttributeName: UIColor.yepTintColor(),
             NSFontAttributeName: UIFont.barButtonFont()
         ]

@@ -9,7 +9,7 @@
 import UIKit
 import MonkeyKing
 
-class SocialWorkInstagramViewController: BaseViewController {
+final class SocialWorkInstagramViewController: BaseViewController {
 
     var socialAccount: SocialAccount?
     var profileUser: ProfileUser?
@@ -19,7 +19,7 @@ class SocialWorkInstagramViewController: BaseViewController {
 
 
     private lazy var shareButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(barButtonSystemItem: .Action, target: self, action: "share:")
+        let button = UIBarButtonItem(barButtonSystemItem: .Action, target: self, action: #selector(SocialWorkInstagramViewController.share(_:)))
         return button
         }()
 
@@ -160,7 +160,7 @@ class SocialWorkInstagramViewController: BaseViewController {
                 )
 
                 let activityViewController = UIActivityViewController(activityItems: [profileURL], applicationActivities: [weChatSessionActivity, weChatTimelineActivity])
-
+                activityViewController.excludedActivityTypes = [UIActivityTypeMessage, UIActivityTypeMail]
                 presentViewController(activityViewController, animated: true, completion: nil)
             }
         }

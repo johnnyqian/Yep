@@ -8,7 +8,7 @@
 
 import UIKit
 
-class YepHUD: NSObject {
+final class YepHUD: NSObject {
 
     static let sharedInstance = YepHUD()
 
@@ -70,7 +70,7 @@ class YepHUD: NSObject {
                                 dismissTimer.invalidate()
                             }
                             
-                            self.sharedInstance.dismissTimer = NSTimer.scheduledTimerWithTimeInterval(YepConfig.forcedHideActivityIndicatorTimeInterval, target: self, selector: "forcedHideActivityIndicator", userInfo: nil, repeats: false)
+                            self.sharedInstance.dismissTimer = NSTimer.scheduledTimerWithTimeInterval(YepConfig.forcedHideActivityIndicatorTimeInterval, target: self, selector: #selector(YepHUD.forcedHideActivityIndicator), userInfo: nil, repeats: false)
                         })
                     })
             }
