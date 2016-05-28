@@ -8,8 +8,10 @@
 
 import UIKit
 import MapKit
+import YepKit
+import YepConfig
 
-class ChatRightLocationCell: ChatRightBaseCell {
+final class ChatRightLocationCell: ChatRightBaseCell {
 
     lazy var mapImageView: UIImageView = {
         let imageView = UIImageView()
@@ -63,7 +65,7 @@ class ChatRightLocationCell: ChatRightBaseCell {
         }
 
         mapImageView.userInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: "tapMediaView")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(ChatRightLocationCell.tapMediaView))
         mapImageView.addGestureRecognizer(tap)
 
         prepareForMenuAction = { otherGesturesEnabled in

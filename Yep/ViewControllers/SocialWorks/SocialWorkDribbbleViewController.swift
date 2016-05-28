@@ -7,10 +7,12 @@
 //
 
 import UIKit
+import YepKit
+import YepNetworking
 import Kingfisher
 import MonkeyKing
 
-class SocialWorkDribbbleViewController: BaseViewController {
+final class SocialWorkDribbbleViewController: BaseViewController {
 
     var socialAccount: SocialAccount?
     var profileUser: ProfileUser?
@@ -20,9 +22,9 @@ class SocialWorkDribbbleViewController: BaseViewController {
 
 
     private lazy var shareButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(barButtonSystemItem: .Action, target: self, action: "share:")
+        let button = UIBarButtonItem(barButtonSystemItem: .Action, target: self, action: #selector(SocialWorkDribbbleViewController.share(_:)))
         return button
-        }()
+    }()
     
     @IBOutlet private weak var dribbbleCollectionView: UICollectionView!
 
@@ -157,7 +159,7 @@ class SocialWorkDribbbleViewController: BaseViewController {
             )
             
             let activityViewController = UIActivityViewController(activityItems: [profileURL], applicationActivities: [weChatSessionActivity, weChatTimelineActivity])
-
+            activityViewController.excludedActivityTypes = [UIActivityTypeMessage, UIActivityTypeMail]
             presentViewController(activityViewController, animated: true, completion: nil)
         }
     }

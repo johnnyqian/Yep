@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepNetworking
 import OnePasswordExtension
 
-class OAuthViewController: BaseViewController {
+final class OAuthViewController: BaseViewController {
 
     var socialAccount: SocialAccount!
     var afterOAuthAction: ((socialAccount: SocialAccount) -> Void)?

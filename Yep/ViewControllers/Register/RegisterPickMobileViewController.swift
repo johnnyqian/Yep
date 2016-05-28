@@ -7,10 +7,15 @@
 //
 
 import UIKit
+import YepKit
+import YepNetworking
 import Ruler
 
-class RegisterPickMobileViewController: SegueViewController {
+final class RegisterPickMobileViewController: SegueViewController {
 
+    var mobile: String?
+    var areaCode: String?
+    
     @IBOutlet private weak var pickMobileNumberPromptLabel: UILabel!
     @IBOutlet private weak var pickMobileNumberPromptLabelTopConstraint: NSLayoutConstraint!
 
@@ -21,7 +26,7 @@ class RegisterPickMobileViewController: SegueViewController {
     @IBOutlet private weak var mobileNumberTextFieldTopConstraint: NSLayoutConstraint!
 
     private lazy var nextButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(title: NSLocalizedString("Next", comment: ""), style: .Plain, target: self, action: "next:")
+        let button = UIBarButtonItem(title: NSLocalizedString("Next", comment: ""), style: .Plain, target: self, action: #selector(RegisterPickMobileViewController.next(_:)))
         return button
     }()
 
@@ -36,22 +41,25 @@ class RegisterPickMobileViewController: SegueViewController {
 
         pickMobileNumberPromptLabel.text = NSLocalizedString("What's your number?", comment: "")
 
-        areaCodeTextField.text = NSTimeZone.areaCode
+        areaCodeTextField.text = areaCode ?? NSTimeZone.areaCode
         areaCodeTextField.backgroundColor = UIColor.whiteColor()
 
         areaCodeTextField.delegate = self
-        areaCodeTextField.addTarget(self, action: "textFieldDidChange:", forControlEvents: .EditingChanged)
+        areaCodeTextField.addTarget(self, action: #selector(RegisterPickMobileViewController.textFieldDidChange(_:)), forControlEvents: .EditingChanged)
 
         //mobileNumberTextField.placeholder = ""
+        mobileNumberTextField.text = mobile
         mobileNumberTextField.backgroundColor = UIColor.whiteColor()
         mobileNumberTextField.textColor = UIColor.yepInputTextColor()
         mobileNumberTextField.delegate = self
-        mobileNumberTextField.addTarget(self, action: "textFieldDidChange:", forControlEvents: .EditingChanged)
+        mobileNumberTextField.addTarget(self, action: #selector(RegisterPickMobileViewController.textFieldDidChange(_:)), forControlEvents: .EditingChanged)
 
         pickMobileNumberPromptLabelTopConstraint.constant = Ruler.iPhoneVertical(30, 50, 60, 60).value
         mobileNumberTextFieldTopConstraint.constant = Ruler.iPhoneVertical(30, 40, 50, 50).value
 
-        nextButton.enabled = false
+        if mobile == nil {
+            nextButton.enabled = false
+        }
     }
 
     override func viewWillAppear(animated: Bool) {

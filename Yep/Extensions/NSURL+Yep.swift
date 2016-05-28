@@ -7,7 +7,7 @@
 //
 
 import Foundation
-
+import YepKit
 private let yepHost = "soyep.com"
 
 extension NSURL {
@@ -80,61 +80,40 @@ extension NSURL {
 
         return false
     }
+}
 
-    // iTunes
+extension NSURL {
 
-    var yep_iTunesArtworkID: String? {
+    var yep_isNetworkURL: Bool {
 
-        if let artworkID = queryItemForKey("i")?.value {
-            return artworkID
-
-        } else {
-            if let artworkID = lastPathComponent?.stringByReplacingOccurrencesOfString("id", withString: "") {
-                return artworkID
-            }
-        }
-
-        return nil
-    }
-
-    enum AppleOnlineStoreHost: String {
-        case iTunesLong = "itunes.apple.com"
-        case iTunesShort = "itun.es"
-        case AppStoreShort = "appsto.re"
-    }
-
-    var yep_isAppleiTunesURL: Bool {
-
-        guard let host = host, _ = AppleOnlineStoreHost(rawValue: host) else {
+        switch scheme {
+        case "http", "https":
+            return true
+        default:
             return false
         }
-
-        return true
     }
 
-    var yep_appleAllianceURL: NSURL {
+    var yep_validSchemeNetworkURL: NSURL? {
 
-        guard self.yep_isAppleiTunesURL else {
-            return self
-        }
+        if scheme.isEmpty {
 
-        guard let URLComponents = NSURLComponents(URL: self, resolvingAgainstBaseURL: false) else {
-            return self
-        }
+            guard let URLComponents = NSURLComponents(URL: self, resolvingAgainstBaseURL: false) else {
+                return nil
+            }
 
-        let queryItem = NSURLQueryItem(name: "at", value: "1010l9k7")
+            URLComponents.scheme = "http"
 
-        if URLComponents.queryItems == nil {
-            URLComponents.queryItems = [queryItem]
+            return URLComponents.URL
+
         } else {
-            URLComponents.queryItems?.append(queryItem)
-        }
+            if yep_isNetworkURL {
+                return self
 
-        guard let resultURL = URLComponents.URL else {
-            return self
+            } else {
+                return nil
+            }
         }
-
-        return resultURL
     }
 }
 

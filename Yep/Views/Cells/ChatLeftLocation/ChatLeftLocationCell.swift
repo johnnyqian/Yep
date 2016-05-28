@@ -7,8 +7,10 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 
-class ChatLeftLocationCell: ChatBaseCell {
+final class ChatLeftLocationCell: ChatBaseCell {
 
     lazy var mapImageView: UIImageView = {
         let imageView = UIImageView()
@@ -69,7 +71,7 @@ class ChatLeftLocationCell: ChatBaseCell {
         }
 
         mapImageView.userInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: "tapMediaView")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(ChatLeftLocationCell.tapMediaView))
         mapImageView.addGestureRecognizer(tap)
 
         prepareForMenuAction = { otherGesturesEnabled in
@@ -116,7 +118,7 @@ class ChatLeftLocationCell: ChatBaseCell {
     private func configureNameLabel() {
 
         if inGroup {
-            nameLabel.text = user?.chatCellCompositedName
+            nameLabel.text = user?.compositedName
 
             let height = YepConfig.ChatCell.nameLabelHeightForGroup
             let x = CGRectGetMaxX(avatarImageView.frame) + YepConfig.chatCellGapBetweenTextContentLabelAndAvatar()

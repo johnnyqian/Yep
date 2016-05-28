@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import YepConfig
 
-class ProfileSocialAccountCell: UICollectionViewCell {
+final class ProfileSocialAccountCell: UICollectionViewCell {
 
     @IBOutlet weak var iconImageView: UIImageView!
     @IBOutlet weak var iconImageViewLeadingConstraint: NSLayoutConstraint!

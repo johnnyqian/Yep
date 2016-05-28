@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepNetworking
 import pop
 
-class RegisterSelectSkillsViewController: UIViewController {
+final class RegisterSelectSkillsViewController: UIViewController {
 
     var annotationText: String = ""
     var selectSkillAction: ((skill: Skill, selected: Bool) -> Bool)?
@@ -182,7 +184,7 @@ extension RegisterSelectSkillsViewController: UICollectionViewDataSource, UIColl
                 
                 header.annotationLabel.text = annotationText
                 
-                let tap = UITapGestureRecognizer(target: self, action: "dismiss")
+                let tap = UITapGestureRecognizer(target: self, action: #selector(RegisterSelectSkillsViewController.dismiss))
                 header.annotationLabel.userInteractionEnabled = true
                 header.annotationLabel.addGestureRecognizer(tap)
                 

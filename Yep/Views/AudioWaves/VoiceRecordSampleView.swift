@@ -8,7 +8,7 @@
 
 import UIKit
 
-class VoiceRecordSampleCell: UICollectionViewCell {
+final class VoiceRecordSampleCell: UICollectionViewCell {
 
     var value: CGFloat = 0 {
         didSet {
@@ -71,6 +71,11 @@ class VoiceRecordSampleView: UIView {
         return view
     }()
 
+    deinit {
+        NSNotificationCenter.defaultCenter().removeObserver(self)
+        println("deinit VoiceRecordSampleView")
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
 
@@ -94,15 +99,21 @@ class VoiceRecordSampleView: UIView {
         addSubview(sampleCollectionView)
         sampleCollectionView.translatesAutoresizingMaskIntoConstraints = false
 
-        let views = [
+        let views: [String: AnyObject] = [
             "sampleCollectionView": sampleCollectionView,
         ]
 
-        let sampleCollectionViewConstraintH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[sampleCollectionView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: views)
-        let sampleCollectionViewConstraintV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[sampleCollectionView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: views)
+        let sampleCollectionViewConstraintH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[sampleCollectionView]|", options: [], metrics: nil, views: views)
+        let sampleCollectionViewConstraintV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[sampleCollectionView]|", options: [], metrics: nil, views: views)
 
         NSLayoutConstraint.activateConstraints(sampleCollectionViewConstraintH)
         NSLayoutConstraint.activateConstraints(sampleCollectionViewConstraintV)
+
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(VoiceRecordSampleView.reloadSampleCollectionView(_:)), name: AppDelegate.Notification.applicationDidBecomeActive, object: nil)
+    }
+
+    @objc private func reloadSampleCollectionView(notification: NSNotification) {
+        sampleCollectionView.reloadData()
     }
 
     func appendSampleValue(value: CGFloat) {

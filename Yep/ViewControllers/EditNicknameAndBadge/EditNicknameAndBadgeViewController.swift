@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepNetworking
 import Ruler
 
-class EditNicknameAndBadgeViewController: UITableViewController {
+final class EditNicknameAndBadgeViewController: UITableViewController {
 
     @IBOutlet private weak var nicknameTextField: UITextField!
 

@@ -7,22 +7,30 @@
 //
 
 import UIKit
-import APAddressBook
+import YepKit
+import YepConfig
+import YepNetworking
 
-class FriendsInContactsViewController: BaseViewController {
+final class FriendsInContactsViewController: BaseViewController {
 
     struct Notification {
         static let NewFriends = "NewFriendsInContactsNotification"
     }
 
-    @IBOutlet private weak var friendsTableView: UITableView!
-    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
+    private let cellIdentifier = "ContactsCell"
 
-    private lazy var addressBook: APAddressBook = {
-        let addressBook = APAddressBook()
-        addressBook.fieldsMask = APContactField(rawValue: APContactField.Name.rawValue | APContactField.PhonesOnly.rawValue)
-        return addressBook
-    }()
+    @IBOutlet private weak var friendsTableView: UITableView! {
+        didSet {
+            friendsTableView.separatorColor = UIColor.yepCellSeparatorColor()
+            friendsTableView.separatorInset = YepConfig.ContactsCell.separatorInset
+
+            friendsTableView.registerNib(UINib(nibName: cellIdentifier, bundle: nil), forCellReuseIdentifier: cellIdentifier)
+            friendsTableView.rowHeight = 80
+            friendsTableView.tableFooterView = UIView()
+        }
+    }
+
+    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
 
     private var discoveredUsers = [DiscoveredUser]() {
         didSet {
@@ -36,64 +44,46 @@ class FriendsInContactsViewController: BaseViewController {
             }
         }
     }
-    
-    private let cellIdentifier = "ContactsCell"
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
         title = NSLocalizedString("Available Friends", comment: "")
+    }
 
-        friendsTableView.separatorColor = UIColor.yepCellSeparatorColor()
-        friendsTableView.separatorInset = YepConfig.ContactsCell.separatorInset
-        
-        friendsTableView.registerNib(UINib(nibName: cellIdentifier, bundle: nil), forCellReuseIdentifier: cellIdentifier)
-        friendsTableView.rowHeight = 80
-        friendsTableView.tableFooterView = UIView()
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
 
-        addressBook.loadContacts { (contacts, error) -> Void in
-            
-            if let contacts = contacts {
+        uploadContactsToMatchNewFriends()
+    }
 
-                var uploadContacts = [UploadContact]()
+    // MARK: Upload Contacts
 
-                for contact in contacts {
+    func uploadContactsToMatchNewFriends() {
 
-                    if let name = contact.name {
+        let uploadContacts = UploadContactsMaker.make()
 
-                        if let phones = contact.phones{
-                            for phone in phones {
-                                if let compositeName = name.compositeName, number = phone.number {
-                                    let uploadContact: UploadContact = ["name": compositeName , "number": number]
-                                    uploadContacts.append(uploadContact)
-                                }
-                            }
-                        }
-                    }
-                }
+        //println("uploadContacts: \(uploadContacts)")
+        println("uploadContacts.count: \(uploadContacts.count)")
 
-                //println(uploadContacts)
-
-                dispatch_async(dispatch_get_main_queue()) { [weak self] in
-                    self?.activityIndicator.startAnimating()
-                }
-
-                friendsInContacts(uploadContacts, failureHandler: { (reason, errorMessage) in
-                    defaultFailureHandler(reason: reason, errorMessage: errorMessage)
-
-                    dispatch_async(dispatch_get_main_queue()) { [weak self] in
-                        self?.activityIndicator.stopAnimating()
-                    }
-
-                }, completion: { discoveredUsers in
-                    dispatch_async(dispatch_get_main_queue()) { [weak self] in
-                        self?.discoveredUsers = discoveredUsers
-
-                        self?.activityIndicator.stopAnimating()
-                    }
-                })
-            }
+        dispatch_async(dispatch_get_main_queue()) { [weak self] in
+            self?.activityIndicator.startAnimating()
         }
+
+        friendsInContacts(uploadContacts, failureHandler: { (reason, errorMessage) in
+            defaultFailureHandler(reason: reason, errorMessage: errorMessage)
+
+            dispatch_async(dispatch_get_main_queue()) { [weak self] in
+                self?.activityIndicator.stopAnimating()
+            }
+
+        }, completion: { discoveredUsers in
+            dispatch_async(dispatch_get_main_queue()) { [weak self] in
+                self?.discoveredUsers = discoveredUsers
+
+                self?.activityIndicator.stopAnimating()
+            }
+        })
     }
 
     // MARK: Actions
@@ -137,7 +127,7 @@ extension FriendsInContactsViewController: UITableViewDataSource, UITableViewDel
 
         let discoveredUser = discoveredUsers[indexPath.row]
 
-        cell.configureWithDiscoveredUser(discoveredUser, tableView: tableView, indexPath: indexPath)
+        cell.configureWithDiscoveredUser(discoveredUser)
 
         return cell
     }

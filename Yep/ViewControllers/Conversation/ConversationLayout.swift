@@ -8,8 +8,9 @@
 
 import UIKit
 import QuartzCore
+import YepConfig
 
-class ConversationLayout: UICollectionViewFlowLayout {
+final class ConversationLayout: UICollectionViewFlowLayout {
 
     override func prepareLayout() {
         super.prepareLayout()

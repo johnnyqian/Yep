@@ -8,9 +8,11 @@
 
 import UIKit
 import CoreLocation
+import YepKit
+import YepConfig
 import RealmSwift
 
-class ProfileFooterCell: UICollectionViewCell {
+final class ProfileFooterCell: UICollectionViewCell {
 
     @IBOutlet weak var nicknameLabel: UILabel!
     @IBOutlet weak var usernameLabel: UILabel!

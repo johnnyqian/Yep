@@ -7,9 +7,14 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import Ruler
 
-class RegisterPickNameViewController: BaseViewController {
+final class RegisterPickNameViewController: BaseViewController {
+
+    var mobile: String?
+    var areaCode: String?
 
     @IBOutlet private weak var pickNamePromptLabel: UILabel!
     @IBOutlet private weak var pickNamePromptLabelTopConstraint: NSLayoutConstraint!
@@ -20,7 +25,7 @@ class RegisterPickNameViewController: BaseViewController {
     @IBOutlet private weak var nameTextFieldTopConstraint: NSLayoutConstraint!
     
     private lazy var nextButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(title: NSLocalizedString("Next", comment: ""), style: .Plain, target: self, action: "next:")
+        let button = UIBarButtonItem(title: NSLocalizedString("Next", comment: ""), style: .Plain, target: self, action: #selector(RegisterPickNameViewController.next(_:)))
         return button
     }()
 
@@ -62,14 +67,14 @@ class RegisterPickNameViewController: BaseViewController {
         promptTermsLabel.alpha = 0.5
 
         promptTermsLabel.userInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: "tapTerms:")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(RegisterPickNameViewController.tapTerms(_:)))
         promptTermsLabel.addGestureRecognizer(tap)
 
         nameTextField.backgroundColor = UIColor.whiteColor()
         nameTextField.textColor = UIColor.yepInputTextColor()
         nameTextField.placeholder = " "//NSLocalizedString("Nickname", comment: "")
         nameTextField.delegate = self
-        nameTextField.addTarget(self, action: "textFieldDidChange:", forControlEvents: .EditingChanged)
+        nameTextField.addTarget(self, action: #selector(RegisterPickNameViewController.textFieldDidChange(_:)), forControlEvents: .EditingChanged)
 
         pickNamePromptLabelTopConstraint.constant = Ruler.iPhoneVertical(30, 50, 60, 60).value
         nameTextFieldTopConstraint.constant = Ruler.iPhoneVertical(30, 40, 50, 50).value
@@ -118,6 +123,28 @@ class RegisterPickNameViewController: BaseViewController {
         YepUserDefaults.nickname.value = nickname
 
         performSegueWithIdentifier("showRegisterPickMobile", sender: nil)
+    }
+
+    // MARK: Navigation
+
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+
+        guard let identifier = segue.identifier else {
+            return
+        }
+
+        switch identifier {
+
+        case "showRegisterPickMobile":
+
+            let vc = segue.destinationViewController as! RegisterPickMobileViewController
+
+            vc.mobile = mobile
+            vc.areaCode = areaCode
+
+        default:
+            break
+        }
     }
 }
 

@@ -100,6 +100,9 @@
 "Choose photo" = "选择照片";
 
 /* No comment provided by engineer. */
+"Choose from Library" = "从相册选取";
+
+/* No comment provided by engineer. */
 "Clear history" = "清除历史记录";
 
 "Contacts" = "联系人";
@@ -152,19 +155,19 @@
 "Face to Face" = "面对面";
 
 /* No comment provided by engineer. */
-"Failed to resend audio!\nPlease make sure your iPhone is connected to the Internet." = "重发音频失败！\n请确保您的 iPhone 已连接到互联网。";
+"Failed to resend audio!\nPlease make sure your device is connected to the Internet." = "重发音频失败！\n请确保您的设备已连接到互联网。";
 
 /* No comment provided by engineer. */
-"Failed to resend image!\nPlease make sure your iPhone is connected to the Internet." = "重发图片失败！\n请确保您的 iPhone 已连接到互联网。";
+"Failed to resend image!\nPlease make sure your device is connected to the Internet." = "重发图片失败！\n请确保您的设备已连接到互联网。";
 
 /* No comment provided by engineer. */
-"Failed to resend location!\nPlease make sure your iPhone is connected to the Internet." = "重发位置失败！\n请确保您的 iPhone 已连接到互联网。";
+"Failed to resend location!\nPlease make sure your device is connected to the Internet." = "重发位置失败！\n请确保您的设备已连接到互联网。";
 
 /* No comment provided by engineer. */
-"Failed to resend text!\nPlease make sure your iPhone is connected to the Internet." = "重发文字失败！\n请确保您的 iPhone 已连接到互联网。";
+"Failed to resend text!\nPlease make sure your device is connected to the Internet." = "重发文字失败！\n请确保您的设备已连接到互联网。";
 
 /* No comment provided by engineer. */
-"Failed to resend video!\nPlease make sure your iPhone is connected to the Internet." = "重发视频失败！\n请确保您的 iPhone 已连接到互联网。";
+"Failed to resend video!\nPlease make sure your device is connected to the Internet." = "重发视频失败！\n请确保您的设备已连接到互联网。";
 
 /* No comment provided by engineer. */
 "Failed to send audio!\nTry tap on message to resend." = "发送音频失败！\n轻按消息气泡可以重发。";
@@ -345,6 +348,9 @@
 /* No comment provided by engineer. */
 "recording" = "录制语音";
 
+//* No comment provided by engineer. */
+"Recently Deleted" = "最近删除";
+
 /* No comment provided by engineer. */
 "Reject" = "拒绝";
 
@@ -498,6 +504,8 @@
 /* No comment provided by engineer. */
 "What's your number?" = "您的手机号码？";
 
+"This number (%@) not yet registered! Would you like to register it now?" = "此手机号（%@）尚未注册Yep！您想现在注册吗？";
+
 /* No comment provided by engineer. */
 "Yep" = "Yep";
 
@@ -535,7 +543,7 @@
 "You have blocked %@! Do you want to unblock him or her?" = "您已屏蔽“%@”！您要解除屏蔽吗？";
 
 /* No comment provided by engineer. */
-"Pods help Yep" = "Yep 使用的第三方 Pods";
+"Pods helps Yep" = "Yep 使用的第三方 Pods";
 
 /* No comment provided by engineer. */
 "Rate Yep on App Store" = "在 App Store 上对 Yep 评分";
@@ -610,7 +618,7 @@
 "Set Username" = "设置用户名";
 
 /* No comment provided by engineer. */
-"Please note that you can only set username once." = "请注意，您只能设置一次用户名。";
+"Please note that you can only set username once." = "请注意，你只能设置一次用户名哦~";
 
 /* No comment provided by engineer. */
 "Set" = "设置";
@@ -717,7 +725,7 @@
 
 "Upload failed!" = "上传失败！";
 
-"All message read" = "没有未读消息";
+"All messages read." = "没有未读消息";
 
 "Recall" = "撤回";
 
@@ -732,4 +740,66 @@
 "No username" = "没有用户名";
 
 "Create feed failed!" = "创建话题失败！";
+
+"[Mentioned you]" = "[提及了你]";
+
+"Friends" = "好友";
+
+"Users" = "用户";
+
+"Messages" = "消息";
+
+"Show More" = "查看更多";
+
+"Search Feeds" = "搜索话题";
+
+"Chat Records" = "聊天记录";
+
+"%d messages" = "%d 条相关记录";
+
+"Hide these feeds" = "不看此人的话题";
+
+"Feeds by this creator will remove from your timeline." = "此人的话题将不再出现在您的时间线上";
+
+"Creators of Blocked Feeds" = "被屏蔽的话题创建者";
+"Blocked Creators" = "被屏蔽的创建者";
+"No blocked creators." = "没有被屏蔽的创建者";
+"Ooops! You've been blocked." = "Ooops! 您被对方屏蔽了。";
+
+"Try keywords" = "试试这些";
+
+"No more results." = "没有更多结果了";
+
+"Search feeds in channel" = "搜索频道话题";
+"Search feeds by user" = "搜索用户话题";
+
+"Change Mobile" = "修改手机号";
+"What's your new number?" = "您的新手机号码？";
+"Current number:" = "当前号码";
+
+"Submit" = "提交";
+"You have successfully updated your mobile for Yep! For now on, using the new number to login." = "您已成功更新您的Yep手机号！以后您可使用新号码进行登录。";
+
+"Upload Contacts" = "通讯录好友";
+"Yep will match friends from your contacts for you." = "Yep会从您的通讯录里为您匹配好友。";
+
+"Blog" = "Blog";
+"Set Blog" = "设置Blog";
+"Input your blog's URL." = "请输入您Blog的URL地址。";
+"Set blog failed!" = "设置Blog失败！";
+"Invalid URL!" = "无效的URL！";
+"You have entered an invalid URL!" = "您输入了无效的URL！";
+"Get title of URL failed!" = "获取URL标题失败！";
+"Modify" = "修改";
+"No title for URL!" = "此URL没有标题！";
+
+"Recommend" = "推荐";
+"Cancel\nRecommended" = "取消\n推荐";
+"Recommend feed failed!" = "推荐话题失败！";
+"Cancel recommended feed failed!" = "取消推荐话题失败！";
+
+"Recommended" = "推荐";
+"Lately" = "最新";
+
+"No Feeds." = "没有话题";
 

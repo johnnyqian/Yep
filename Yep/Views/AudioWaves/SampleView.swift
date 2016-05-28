@@ -7,9 +7,10 @@
 //
 
 import UIKit
+import YepConfig
 
 @IBDesignable
-class SampleView: UIView {
+final class SampleView: UIView {
 
     var samples: [CGFloat]?
 

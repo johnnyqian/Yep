@@ -7,9 +7,12 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
+import YepNetworking
 import Kingfisher
 
-class ProfileSocialAccountImagesCell: UICollectionViewCell {
+final class ProfileSocialAccountImagesCell: UICollectionViewCell {
     
     var socialAccount: SocialAccount?
 

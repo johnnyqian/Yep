@@ -7,9 +7,10 @@
 //
 
 import UIKit
+import YepKit
 import Ruler
 
-class ChatLeftTextURLCell: ChatLeftTextCell {
+final class ChatLeftTextURLCell: ChatLeftTextCell {
 
     var openGraphURL: NSURL?
     var tapOpenGraphURLAction: ((URL: NSURL) -> Void)?

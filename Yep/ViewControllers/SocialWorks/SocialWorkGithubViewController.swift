@@ -7,10 +7,13 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
+import YepNetworking
 import MonkeyKing
 import Navi
 
-class SocialWorkGithubViewController: BaseViewController {
+final class SocialWorkGithubViewController: BaseViewController {
 
     var socialAccount: SocialAccount?
     var profileUser: ProfileUser?
@@ -18,9 +21,8 @@ class SocialWorkGithubViewController: BaseViewController {
 
     var afterGetGithubWork: (GithubWork -> Void)?
 
-
     private lazy var shareButton: UIBarButtonItem = {
-        let button = UIBarButtonItem(barButtonSystemItem: .Action, target: self, action: "share:")
+        let button = UIBarButtonItem(barButtonSystemItem: .Action, target: self, action: #selector(SocialWorkGithubViewController.share(_:)))
         return button
     }()
 
@@ -199,7 +201,7 @@ class SocialWorkGithubViewController: BaseViewController {
             )
 
             let activityViewController = UIActivityViewController(activityItems: [githubURL], applicationActivities: [weChatSessionActivity, weChatTimelineActivity])
-
+            activityViewController.excludedActivityTypes = [UIActivityTypeMessage, UIActivityTypeMail]
             presentViewController(activityViewController, animated: true, completion: nil)
         }
     }

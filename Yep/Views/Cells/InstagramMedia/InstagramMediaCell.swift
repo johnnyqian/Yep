@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import Kingfisher
 
-class InstagramMediaCell: UICollectionViewCell {
+final class InstagramMediaCell: UICollectionViewCell {
 
     @IBOutlet weak var imageView: UIImageView!
 

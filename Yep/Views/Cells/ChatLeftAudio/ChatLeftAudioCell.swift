@@ -7,8 +7,10 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 
-class ChatLeftAudioCell: ChatBaseCell {
+final class ChatLeftAudioCell: ChatBaseCell {
 
     var message: Message?
 
@@ -44,6 +46,7 @@ class ChatLeftAudioCell: ChatBaseCell {
     lazy var sampleView: SampleView = {
         let view = SampleView()
         view.sampleColor = UIColor.leftWaveColor()
+        view.userInteractionEnabled = false
         return view
     }()
 
@@ -118,7 +121,7 @@ class ChatLeftAudioCell: ChatBaseCell {
         }
 
         bubbleImageView.userInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: "tapMediaView")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(ChatLeftAudioCell.tapMediaView))
         bubbleImageView.addGestureRecognizer(tap)
 
         prepareForMenuAction = { otherGesturesEnabled in
@@ -232,7 +235,7 @@ class ChatLeftAudioCell: ChatBaseCell {
     private func configureNameLabel() {
 
         if inGroup {
-            nameLabel.text = user?.chatCellCompositedName
+            nameLabel.text = user?.compositedName
 
             let height = YepConfig.ChatCell.nameLabelHeightForGroup
             let x = CGRectGetMaxX(avatarImageView.frame) + YepConfig.chatCellGapBetweenTextContentLabelAndAvatar()

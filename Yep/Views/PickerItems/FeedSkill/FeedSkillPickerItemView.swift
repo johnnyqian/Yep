@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import YepKit
 
-class FeedSkillPickerItemView: UIView {
+final class FeedSkillPickerItemView: UIView {
 
     lazy var bubbleImageView: UIImageView = {
         let view = UIImageView(image: UIImage(named: "skill_bubble")!)

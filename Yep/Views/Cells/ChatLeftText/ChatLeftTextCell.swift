@@ -7,10 +7,13 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 
 class ChatLeftTextCell: ChatBaseCell {
 
     var tapUsernameAction: ((username: String) -> Void)?
+    var tapFeedAction: ((feed: DiscoveredFeed) -> Void)?
 
     lazy var bubbleTailImageView: UIImageView = {
         let imageView = UIImageView(image: UIImage(named: "bubble_left_tail"))
@@ -40,6 +43,10 @@ class ChatLeftTextCell: ChatBaseCell {
 
         view.tapMentionAction = { [weak self] username in
             self?.tapUsernameAction?(username: username)
+        }
+
+        view.tapFeedAction = { [weak self] feed in
+            self?.tapFeedAction?(feed: feed)
         }
 
         return view
@@ -132,7 +139,7 @@ class ChatLeftTextCell: ChatBaseCell {
                 strongSelf.bubbleBodyShapeLayer.path = UIBezierPath(roundedRect: bubbleBodyFrame, byRoundingCorners: UIRectCorner.AllCorners, cornerRadii: CGSize(width: YepConfig.ChatCell.bubbleCornerRadius, height: YepConfig.ChatCell.bubbleCornerRadius)).CGPath
                 
                 if strongSelf.inGroup {
-                    strongSelf.nameLabel.text = strongSelf.user?.chatCellCompositedName
+                    strongSelf.nameLabel.text = strongSelf.user?.compositedName
 
                     let height = YepConfig.ChatCell.nameLabelHeightForGroup
                     let x = textContentTextViewFrame.origin.x

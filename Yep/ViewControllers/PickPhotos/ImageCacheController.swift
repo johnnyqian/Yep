@@ -9,7 +9,7 @@
 import Foundation
 import Photos
 
-class ImageCacheController {
+final class ImageCacheController {
 
     private var cachedIndices = NSIndexSet()
     var cachePreheatSize: Int
@@ -48,7 +48,6 @@ class ImageCacheController {
                 //println("Stopping caching image \(index)")
             }
         }
-
         // And which are new?
         updatedCache.enumerateIndexesUsingBlock { index, _ in
             if !self.cachedIndices.containsIndex(index) {

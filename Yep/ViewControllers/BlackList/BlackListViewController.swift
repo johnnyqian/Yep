@@ -7,16 +7,18 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import RealmSwift
 
-class BlackListViewController: UIViewController {
+final class BlackListViewController: BaseViewController {
 
     @IBOutlet private weak var blockedUsersTableView: UITableView!
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
 
     private let cellIdentifier = "ContactsCell"
 
-    private var blockedUsers = [DiscoveredUser]() {
+    private var blockedUsers: [DiscoveredUser] = [] {
         willSet {
             if newValue.count == 0 {
                 blockedUsersTableView.tableFooterView = InfoView(NSLocalizedString("No blocked users.", comment: ""))
@@ -55,6 +57,32 @@ class BlackListViewController: UIViewController {
             }
         })
     }
+
+    // MARK: Navigation
+
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+
+        guard let identifier = segue.identifier else {
+            return
+        }
+
+        switch identifier {
+
+        case "showProfile":
+            let vc = segue.destinationViewController as! ProfileViewController
+
+            if let discoveredUser = (sender as? Box<DiscoveredUser>)?.value {
+                vc.profileUser = .DiscoveredUserType(discoveredUser)
+            }
+
+            vc.hidesBottomBarWhenPushed = true
+
+            vc.setBackButtonWithTitle()
+            
+        default:
+            break
+        }
+    }
 }
 
 extension BlackListViewController: UITableViewDataSource, UITableViewDelegate {
@@ -74,9 +102,19 @@ extension BlackListViewController: UITableViewDataSource, UITableViewDelegate {
 
         let discoveredUser = blockedUsers[indexPath.row]
 
-        cell.configureWithDiscoveredUser(discoveredUser, tableView: tableView, indexPath: indexPath)
+        cell.configureWithDiscoveredUser(discoveredUser)
 
         return cell
+    }
+
+    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+
+        defer {
+            tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        }
+
+        let discoveredUser = blockedUsers[indexPath.row]
+        performSegueWithIdentifier("showProfile", sender: Box<DiscoveredUser>(discoveredUser))
     }
 
     // Edit (for Unblock)

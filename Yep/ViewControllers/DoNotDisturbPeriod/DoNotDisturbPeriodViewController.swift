@@ -8,8 +8,10 @@
 
 import UIKit
 import RealmSwift
+import YepKit
+import YepNetworking
 
-class DoNotDisturbPeriodViewController: UIViewController {
+final class DoNotDisturbPeriodViewController: UIViewController {
 
     var doNotDisturbPeriod = DoNotDisturbPeriod()
 

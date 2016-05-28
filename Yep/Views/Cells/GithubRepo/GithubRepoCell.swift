@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import YepConfig
 
-class GithubRepoCell: UITableViewCell {
+final class GithubRepoCell: UITableViewCell {
 
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var nameLabelLeadingConstraint: NSLayoutConstraint!

@@ -8,8 +8,9 @@
 
 import UIKit
 import Photos
+import YepKit
 
-class MoreMessageTypesView: UIView {
+final class MoreMessageTypesView: UIView {
 
     let totalHeight: CGFloat = 100 + 60 * 3
 
@@ -119,7 +120,7 @@ class MoreMessageTypesView: UIView {
 
             makeUI()
 
-            let tap = UITapGestureRecognizer(target: self, action: "hide")
+            let tap = UITapGestureRecognizer(target: self, action: #selector(MoreMessageTypesView.hide))
             containerView.addGestureRecognizer(tap)
 
             tap.cancelsTouchesInView = true
@@ -135,22 +136,22 @@ class MoreMessageTypesView: UIView {
         containerView.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
 
-        let viewsDictionary = [
+        let viewsDictionary: [String: AnyObject] = [
             "containerView": containerView,
             "tableView": tableView,
         ]
 
         // layout for containerView
 
-        let containerViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[containerView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
-        let containerViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[containerView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let containerViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[containerView]|", options: [], metrics: nil, views: viewsDictionary)
+        let containerViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[containerView]|", options: [], metrics: nil, views: viewsDictionary)
 
         NSLayoutConstraint.activateConstraints(containerViewConstraintsH)
         NSLayoutConstraint.activateConstraints(containerViewConstraintsV)
 
         // layout for tableView
 
-        let tableViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[tableView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let tableViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[tableView]|", options: [], metrics: nil, views: viewsDictionary)
 
         let tableViewBottomConstraint = NSLayoutConstraint(item: tableView, attribute: .Bottom, relatedBy: .Equal, toItem: containerView, attribute: .Bottom, multiplier: 1.0, constant: self.totalHeight)
 

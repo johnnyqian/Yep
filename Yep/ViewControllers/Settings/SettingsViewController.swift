@@ -7,8 +7,10 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 
-class SettingsViewController: BaseViewController {
+final class SettingsViewController: BaseViewController {
 
     @IBOutlet private weak var settingsTableView: UITableView!
 

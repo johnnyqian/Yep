@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import Kingfisher
 
-class DribbbleShotCell: UICollectionViewCell {
+final class DribbbleShotCell: UICollectionViewCell {
 
     @IBOutlet weak var imageView: UIImageView!
     

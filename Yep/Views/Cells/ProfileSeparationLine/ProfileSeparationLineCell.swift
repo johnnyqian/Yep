@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import YepConfig
 
-class ProfileSeparationLineCell: UICollectionViewCell {
+final class ProfileSeparationLineCell: UICollectionViewCell {
 
     var leftEdgeInset: CGFloat = YepConfig.Profile.leftEdgeInset
     var rightEdgeInset: CGFloat = YepConfig.Profile.rightEdgeInset

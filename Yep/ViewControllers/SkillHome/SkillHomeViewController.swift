@@ -7,16 +7,19 @@
 //
 
 import UIKit
-import MobileCoreServices
+import MobileCoreServices.UTType
 import RealmSwift
+import YepKit
+import YepConfig
+import YepNetworking
 import Proposer
 import Navi
 
 let ScrollViewTag = 100
 
-class SkillHomeViewController: BaseViewController {
+final class SkillHomeViewController: BaseViewController {
 
-    var skill: SkillCell.Skill? {
+    var skill: SkillCellSkill? {
         willSet {
             title = newValue?.localName
             skillCoverURLString = newValue?.coverURLString
@@ -139,9 +142,9 @@ class SkillHomeViewController: BaseViewController {
 
         headerViewHeightLayoutConstraint.constant = YepConfig.skillHomeHeaderViewHeight
         
-        headerView.masterButton.addTarget(self, action: "changeToMaster:", forControlEvents: UIControlEvents.TouchUpInside)
+        headerView.masterButton.addTarget(self, action: #selector(SkillHomeViewController.changeToMaster(_:)), forControlEvents: UIControlEvents.TouchUpInside)
         
-        headerView.learningButton.addTarget(self, action: "changeToLearning:", forControlEvents: UIControlEvents.TouchUpInside)
+        headerView.learningButton.addTarget(self, action: #selector(SkillHomeViewController.changeToLearning(_:)), forControlEvents: UIControlEvents.TouchUpInside)
 
         headerView.changeCoverAction = { [weak self] in
 
@@ -237,7 +240,7 @@ class SkillHomeViewController: BaseViewController {
 
                     if me.masterSkills.filter(predicate).count == 0
                         && me.learningSkills.filter(predicate).count == 0 {
-                            let addSkillToMeButton = UIBarButtonItem(title: NSLocalizedString("Add to Me", comment: ""), style: .Plain, target: self, action: "addSkillToMe:")
+                            let addSkillToMeButton = UIBarButtonItem(title: NSLocalizedString("Add to Me", comment: ""), style: .Plain, target: self, action: #selector(SkillHomeViewController.addSkillToMe(_:)))
                             navigationItem.rightBarButtonItem = addSkillToMeButton
                     }
             }
@@ -335,7 +338,7 @@ class SkillHomeViewController: BaseViewController {
         }
 
         if isLoadMore {
-            masterPage++
+            masterPage += 1
 
         } else {
             masterPage = 1
@@ -380,7 +383,7 @@ class SkillHomeViewController: BaseViewController {
         }
 
         if isLoadMore {
-            learningPage++
+            learningPage += 1
 
         } else {
             learningPage = 1
@@ -486,7 +489,7 @@ extension SkillHomeViewController: UIImagePickerControllerDelegate, UINavigation
 
             switch mediaType {
 
-            case kUTTypeImage as! String:
+            case String(kUTTypeImage):
 
                 if let image = info[UIImagePickerControllerOriginalImage] as? UIImage {
 
@@ -606,11 +609,12 @@ extension SkillHomeViewController: UITableViewDelegate, UITableViewDataSource {
             
             let discoveredUser = discoveredUsersWithSkillSet(SkillSet(rawValue: tableView.tag))[indexPath.row]
 
-            cell.configureWithDiscoveredUser(discoveredUser, tableView: tableView, indexPath: indexPath)
+            cell.configureWithDiscoveredUser(discoveredUser)
 
             return cell
 
         case Section.LoadMore.rawValue:
+
             let cell = tableView.dequeueReusableCellWithIdentifier(loadMoreTableViewCellID) as! LoadMoreTableViewCell
             return cell
 

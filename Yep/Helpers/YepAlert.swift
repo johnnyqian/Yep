@@ -9,7 +9,7 @@
 import UIKit
 import Proposer
 
-class YepAlert {
+final class YepAlert {
 
     class func alert(title title: String, message: String?, dismissTitle: String, inViewController viewController: UIViewController?, withDismissAction dismissAction: (() -> Void)?) {
 
@@ -17,7 +17,7 @@ class YepAlert {
 
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .Alert)
 
-            let action: UIAlertAction = UIAlertAction(title: dismissTitle, style: .Default) { action -> Void in
+            let action: UIAlertAction = UIAlertAction(title: dismissTitle, style: .Default) { action in
                 if let dismissAction = dismissAction {
                     dismissAction()
                 }
@@ -42,12 +42,12 @@ class YepAlert {
 
             let alertController = UIAlertController(title: title, message: nil, preferredStyle: .Alert)
 
-            alertController.addTextFieldWithConfigurationHandler { (textField) -> Void in
+            alertController.addTextFieldWithConfigurationHandler { textField in
                 textField.placeholder = placeholder
                 textField.text = oldText
             }
 
-            let action: UIAlertAction = UIAlertAction(title: dismissTitle, style: .Default) { action -> Void in
+            let action: UIAlertAction = UIAlertAction(title: dismissTitle, style: .Default) { action in
                 if let finishedAction = finishedAction {
                     if let textField = alertController.textFields?.first, text = textField.text {
                         finishedAction(text: text)
@@ -59,46 +59,59 @@ class YepAlert {
             viewController?.presentViewController(alertController, animated: true, completion: nil)
         }
     }
-
+    
+    static weak var confirmAlertAction: UIAlertAction?
+    
     class func textInput(title title: String, message: String?, placeholder: String?, oldText: String?, confirmTitle: String, cancelTitle: String, inViewController viewController: UIViewController?, withConfirmAction confirmAction: ((text: String) -> Void)?, cancelAction: (() -> Void)?) {
 
         dispatch_async(dispatch_get_main_queue()) {
 
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .Alert)
 
-            alertController.addTextFieldWithConfigurationHandler { (textField) -> Void in
+            alertController.addTextFieldWithConfigurationHandler { textField in
                 textField.placeholder = placeholder
                 textField.text = oldText
+                textField.addTarget(self, action: #selector(YepAlert.handleTextFieldTextDidChangeNotification(_:)), forControlEvents: .EditingChanged)
             }
 
-            let _cancelAction: UIAlertAction = UIAlertAction(title: cancelTitle, style: .Cancel) { action -> Void in
+            let _cancelAction: UIAlertAction = UIAlertAction(title: cancelTitle, style: .Cancel) { action in
                 cancelAction?()
             }
+            
             alertController.addAction(_cancelAction)
-
-            let _confirmAction: UIAlertAction = UIAlertAction(title: confirmTitle, style: .Default) { action -> Void in
+            
+            let _confirmAction: UIAlertAction = UIAlertAction(title: confirmTitle, style: .Default) { action in
                 if let textField = alertController.textFields?.first, text = textField.text {
+                    
                     confirmAction?(text: text)
                 }
             }
+            _confirmAction.enabled = false
+            self.confirmAlertAction = _confirmAction
+            
             alertController.addAction(_confirmAction)
 
             viewController?.presentViewController(alertController, animated: true, completion: nil)
         }
     }
 
+    @objc class func handleTextFieldTextDidChangeNotification(sender: UITextField) {
+
+        YepAlert.confirmAlertAction?.enabled = sender.text?.utf16.count >= 1
+    }
+    
     class func confirmOrCancel(title title: String, message: String, confirmTitle: String, cancelTitle: String, inViewController viewController: UIViewController?, withConfirmAction confirmAction: () -> Void, cancelAction: () -> Void) {
 
         dispatch_async(dispatch_get_main_queue()) {
 
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .Alert)
 
-            let cancelAction: UIAlertAction = UIAlertAction(title: cancelTitle, style: .Cancel) { action -> Void in
+            let cancelAction: UIAlertAction = UIAlertAction(title: cancelTitle, style: .Cancel) { action in
                 cancelAction()
             }
             alertController.addAction(cancelAction)
 
-            let confirmAction: UIAlertAction = UIAlertAction(title: confirmTitle, style: .Default) { action -> Void in
+            let confirmAction: UIAlertAction = UIAlertAction(title: confirmTitle, style: .Default) { action in
                 confirmAction()
             }
             alertController.addAction(confirmAction)
@@ -106,7 +119,6 @@ class YepAlert {
             viewController?.presentViewController(alertController, animated: true, completion: nil)
         }
     }
-
 }
 
 extension UIViewController {
@@ -142,7 +154,7 @@ extension UIViewController {
 
                 UIApplication.sharedApplication().openURL(NSURL(string: UIApplicationOpenSettingsURLString)!)
 
-                }, cancelAction: {
+            }, cancelAction: {
             })
         }
     }
@@ -170,7 +182,6 @@ extension UIViewController {
             })
         }
     }
-
 
     func showProposeMessageIfNeedForContactsAndTryPropose(propose: Propose) {
 

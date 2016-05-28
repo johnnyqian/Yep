@@ -7,8 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
+import YepNetworking
 
-class ProfileSocialAccountGithubCell: UICollectionViewCell {
+final class ProfileSocialAccountGithubCell: UICollectionViewCell {
 
     var githubWork: GithubWork? {
         didSet {

@@ -7,10 +7,12 @@
 //
 
 import UIKit
+import YepKit
 
-class ChatTextView: UITextView {
+final class ChatTextView: UITextView {
 
     var tapMentionAction: ((username: String) -> Void)?
+    var tapFeedAction: ((feed: DiscoveredFeed) -> Void)?
 
     static let detectionTypeName = "ChatTextStorage.detectionTypeName"
 
@@ -70,11 +72,9 @@ class ChatTextView: UITextView {
 
         // iOS 9 以上，强制不添加文字选择长按手势，免去触发选择文字
         // 共有四种长按手势，iOS 9 正式版里分别加了两次：0.1 Reveal，0.12 tap link，0.5 selection， 0.75 press link
-        if isOperatingSystemAtLeastMajorVersion(9) {
-            if let longPressGestureRecognizer = gestureRecognizer as? UILongPressGestureRecognizer {
-                if longPressGestureRecognizer.minimumPressDuration == 0.5 {
-                    return
-                }
+        if let longPressGestureRecognizer = gestureRecognizer as? UILongPressGestureRecognizer {
+            if longPressGestureRecognizer.minimumPressDuration == 0.5 {
+                return
             }
         }
 
@@ -86,15 +86,19 @@ extension ChatTextView: UITextViewDelegate {
 
     func textView(textView: UITextView, shouldInteractWithURL URL: NSURL, inRange characterRange: NSRange) -> Bool {
 
-        guard let detectionTypeName = self.attributedText.attribute(ChatTextView.detectionTypeName, atIndex: characterRange.location, effectiveRange: nil) as? String, detectionType = DetectionType(rawValue: detectionTypeName) else {
+        if let detectionTypeName = self.attributedText.attribute(ChatTextView.detectionTypeName, atIndex: characterRange.location, effectiveRange: nil) as? String, detectionType = DetectionType(rawValue: detectionTypeName) {
+
+            let text = (self.text as NSString).substringWithRange(characterRange)
+            self.hangleTapText(text, withDetectionType: detectionType)
+
+            return false
+
+        } else if URL.yep_matchSharedFeed({ [weak self] feed in self?.tapFeedAction?(feed: feed) }) {
+            return false
+
+        } else {
             return true
         }
-
-        let text = (self.text as NSString).substringWithRange(characterRange)
-
-        self.hangleTapText(text, withDetectionType: detectionType)
-
-        return true
     }
 
     private func hangleTapText(text: String, withDetectionType detectionType: DetectionType) {

@@ -8,11 +8,12 @@
 
 import UIKit
 import CoreLocation
+import YepKit
 import FXBlurView
 import Proposer
 import Navi
 
-class ProfileHeaderCell: UICollectionViewCell {
+final class ProfileHeaderCell: UICollectionViewCell {
 
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var avatarBlurImageView: UIImageView!

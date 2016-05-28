@@ -7,13 +7,15 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import Navi
 
 let skillTextAttributes = [NSFontAttributeName: UIFont.skillDiscoverTextFont()]
 
 var skillCardCache = [String: UIImage?]()
 
-class DiscoverCardUserCell: UICollectionViewCell {
+final class DiscoverCardUserCell: UICollectionViewCell {
     
     @IBOutlet weak var serviceImageView: UIImageView!
     

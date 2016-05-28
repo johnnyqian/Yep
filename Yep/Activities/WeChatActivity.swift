@@ -7,9 +7,10 @@
 //
 
 import UIKit
+import YepConfig
 import MonkeyKing
 
-class WeChatActivity: AnyActivity {
+final class WeChatActivity: AnyActivity {
 
     enum Type {
 

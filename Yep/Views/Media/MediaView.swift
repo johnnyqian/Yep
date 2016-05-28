@@ -7,15 +7,31 @@
 //
 
 import UIKit
+import YepKit
 import AVFoundation
 
-class MediaView: UIView {
+final class MediaView: UIView {
+
+    var inTapZoom: Bool = false
+    var isZoomIn: Bool = false
+    var zoomScaleBeforeZoomIn: CGFloat?
+
+    var tapToDismissAction: (() -> Void)? {
+        didSet {
+            inTapZoom = false
+            isZoomIn = false
+            zoomScaleBeforeZoomIn = nil
+        }
+    }
 
     func updateImageViewWithImage(image: UIImage) {
 
         scrollView.frame = UIScreen.mainScreen().bounds
 
-        let size = image.size
+        //let size = image.size
+        let size = CGSize(width: floor(image.size.width), height: floor(image.size.height))
+        //println("size: \(size)")
+
         imageView.frame = CGRect(origin: CGPointZero, size: size)
 
         setZoomParametersForSize(scrollView.bounds.size, imageSize: size)
@@ -27,7 +43,7 @@ class MediaView: UIView {
 
         recenterImage(image)
 
-        //println("\n\n\n")
+        scrollView.scrollEnabled = false
     }
 
     var image: UIImage? {
@@ -95,6 +111,51 @@ class MediaView: UIView {
         makeUI()
 
         layer.addSublayer(videoPlayerLayer)
+
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(MediaView.doubleTapToZoom(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        addGestureRecognizer(doubleTap)
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(MediaView.tapToDismiss(_:)))
+        tap.requireGestureRecognizerToFail(doubleTap)
+        addGestureRecognizer(tap)
+    }
+
+    @objc private func doubleTapToZoom(sender: UITapGestureRecognizer) {
+
+        inTapZoom = true
+        let zoomPoint = sender.locationInView(self)
+
+        if !isZoomIn {
+            isZoomIn = true
+            zoomScaleBeforeZoomIn = scrollView.zoomScale
+            scrollView.yep_zoomToPoint(zoomPoint, withScale: scrollView.zoomScale * 2, animated: true)
+
+            scrollView.scrollEnabled = true
+
+        } else {
+            if let zoomScale = zoomScaleBeforeZoomIn {
+                zoomScaleBeforeZoomIn = nil
+                isZoomIn = false
+                scrollView.yep_zoomToPoint(zoomPoint, withScale: zoomScale, animated: true)
+
+                scrollView.scrollEnabled = false
+            }
+        }
+    }
+
+    @objc private func tapToDismiss(sender: UITapGestureRecognizer) {
+
+        if let zoomScale = zoomScaleBeforeZoomIn {
+            let quickZoomDuration: NSTimeInterval = 0.35
+            scrollView.yep_zoomToPoint(CGPoint.zero, withScale: zoomScale, animationDuration: quickZoomDuration, animationCurve: .EaseInOut)
+            delay(quickZoomDuration) { [weak self] in
+                self?.tapToDismissAction?()
+            }
+            
+        } else {
+            tapToDismissAction?()
+        }
     }
 
     override func layoutSubviews() {
@@ -111,23 +172,23 @@ class MediaView: UIView {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         coverImageView.translatesAutoresizingMaskIntoConstraints = false
 
-        let viewsDictionary = [
+        let viewsDictionary: [String: AnyObject] = [
             "scrollView": scrollView,
             "imageView": imageView,
             "coverImageView": coverImageView,
         ]
 
-        let scrollViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[scrollView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let scrollViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[scrollView]|", options: [], metrics: nil, views: viewsDictionary)
 
-        let scrollViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[scrollView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let scrollViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[scrollView]|", options: [], metrics: nil, views: viewsDictionary)
 
         NSLayoutConstraint.activateConstraints(scrollViewConstraintsV)
         NSLayoutConstraint.activateConstraints(scrollViewConstraintsH)
 
 
-        let coverImageViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[coverImageView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let coverImageViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[coverImageView]|", options: [], metrics: nil, views: viewsDictionary)
 
-        let coverImageViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[coverImageView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let coverImageViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[coverImageView]|", options: [], metrics: nil, views: viewsDictionary)
 
         NSLayoutConstraint.activateConstraints(coverImageViewConstraintsV)
         NSLayoutConstraint.activateConstraints(coverImageViewConstraintsH)
@@ -136,9 +197,9 @@ class MediaView: UIView {
 
         imageView.translatesAutoresizingMaskIntoConstraints = false
 
-        let imageViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[imageView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let imageViewConstraintsV = NSLayoutConstraint.constraintsWithVisualFormat("V:|[imageView]|", options: [], metrics: nil, views: viewsDictionary)
 
-        let imageViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[imageView]|", options: NSLayoutFormatOptions(rawValue: 0), metrics: nil, views: viewsDictionary)
+        let imageViewConstraintsH = NSLayoutConstraint.constraintsWithVisualFormat("H:|[imageView]|", options: [], metrics: nil, views: viewsDictionary)
 
         NSLayoutConstraint.activateConstraints(imageViewConstraintsV)
         NSLayoutConstraint.activateConstraints(imageViewConstraintsH)
@@ -190,8 +251,17 @@ extension MediaView: UIScrollViewDelegate {
     }
 
     func scrollViewDidZoom(scrollView: UIScrollView) {
+        if inTapZoom {
+            inTapZoom = false
+            return
+        }
+
         if let image = image {
             recenterImage(image)
+
+            zoomScaleBeforeZoomIn = scrollView.minimumZoomScale
+            isZoomIn = !(scrollView.zoomScale == scrollView.minimumZoomScale)
+            scrollView.scrollEnabled = isZoomIn
         }
     }
 }

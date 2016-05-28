@@ -7,8 +7,11 @@
 //
 
 import UIKit
+import YepNetworking
+import YepKit
+import YepConfig
 
-class SearchedUsersViewController: BaseViewController {
+final class SearchedUsersViewController: BaseViewController {
 
     var searchText = "NIX"
 
@@ -98,7 +101,7 @@ extension SearchedUsersViewController: UITableViewDataSource, UITableViewDelegat
 
         let discoveredUser = searchedUsers[indexPath.row]
 
-        cell.configureWithDiscoveredUser(discoveredUser, tableView: tableView, indexPath: indexPath)
+        cell.configureWithDiscoveredUser(discoveredUser)
 
         return cell
     }

@@ -7,10 +7,12 @@
 //
 
 import UIKit
+import YepNetworking
 import Ruler
 import RealmSwift
+import YepKit
 
-class EditSkillsViewController: BaseViewController {
+final class EditSkillsViewController: BaseViewController {
 
     var skillSet: SkillSet?
     var afterChangedSkillsAction: (() -> Void)?

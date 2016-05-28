@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import Navi
 
-class SettingsUserCell: UITableViewCell {
+final class SettingsUserCell: UITableViewCell {
 
     @IBOutlet weak var avatarImageView: UIImageView!
     @IBOutlet weak var avatarImageViewWidthConstraint: NSLayoutConstraint!

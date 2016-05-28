@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 import Kingfisher
 
-class ChatLeftSocialWorkCell: UICollectionViewCell {
+final class ChatLeftSocialWorkCell: UICollectionViewCell {
 
     @IBOutlet weak var avatarImageView: UIImageView!
 

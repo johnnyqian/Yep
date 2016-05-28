@@ -7,10 +7,13 @@
 //
 
 import UIKit
+import YepKit
+import YepConfig
 
 class ChatRightTextCell: ChatRightBaseCell {
 
     var tapUsernameAction: ((username: String) -> Void)?
+    var tapFeedAction: ((feed: DiscoveredFeed) -> Void)?
 
     lazy var bubbleTailImageView: UIImageView = {
         let imageView = UIImageView(image: UIImage(named: "bubble_right_tail"))
@@ -47,6 +50,10 @@ class ChatRightTextCell: ChatRightBaseCell {
             self?.tapUsernameAction?(username: username)
         }
 
+        view.tapFeedAction = { [weak self] feed in
+            self?.tapFeedAction?(feed: feed)
+        }
+
         return view
     }()
 
@@ -80,7 +87,7 @@ class ChatRightTextCell: ChatRightBaseCell {
         }
 
         textContainerView.userInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: "tapMediaView")
+        let tap = UITapGestureRecognizer(target: self, action: #selector(ChatRightTextCell.tapMediaView))
         textContainerView.addGestureRecognizer(tap)
 
         prepareForMenuAction = { otherGesturesEnabled in

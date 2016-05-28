@@ -8,8 +8,10 @@
 
 import UIKit
 import AVFoundation
+import YepKit
+import YepConfig
 
-class NewFeedVoiceRecordViewController: SegueViewController {
+final class NewFeedVoiceRecordViewController: SegueViewController {
 
     var preparedSkill: Skill?
 
@@ -82,6 +84,10 @@ class NewFeedVoiceRecordViewController: SegueViewController {
 
                 }, completion: { _ in })
 
+                displayLink = CADisplayLink(target: self, selector: #selector(NewFeedVoiceRecordViewController.checkVoiceRecordValue(_:)))
+                displayLink?.frameInterval = 6 // 频率为每秒 10 次
+                displayLink?.addToRunLoop(NSRunLoop.currentRunLoop(), forMode: NSRunLoopCommonModes)
+
             case .FinishRecord:
 
                 nextButton.enabled = true
@@ -113,13 +119,15 @@ class NewFeedVoiceRecordViewController: SegueViewController {
                         self?.view.layoutIfNeeded()
                     }, completion: { _ in })
                 })
+
+                displayLink?.invalidate()
             }
         }
     }
 
     private var voiceFileURL: NSURL?
     private var audioPlayer: AVAudioPlayer?
-    private var displayLink: CADisplayLink!
+    private var displayLink: CADisplayLink?
 
     private var sampleValues: [CGFloat] = [] {
         didSet {
@@ -191,16 +199,18 @@ class NewFeedVoiceRecordViewController: SegueViewController {
         }
     }
 
+    deinit {
+        displayLink?.invalidate()
+        playbackTimer?.invalidate()
+        println("deinit NewFeedVoiceRecord")
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
         title = NSLocalizedString("New Voice", comment: "")
 
         nextButton.title = NSLocalizedString("Next", comment: "")
-
-        displayLink = CADisplayLink(target: self, selector: "checkVoiceRecordValue:")
-        displayLink.frameInterval = 6 // 频率为每秒 10 次
-        displayLink.addToRunLoop(NSRunLoop.currentRunLoop(), forMode: NSRunLoopCommonModes)
 
         state = .Default
 
@@ -215,6 +225,9 @@ class NewFeedVoiceRecordViewController: SegueViewController {
     @IBAction private func cancel(sender: UIBarButtonItem) {
 
         dismissViewControllerAnimated(true, completion: { [weak self] in
+
+            self?.displayLink?.invalidate()
+            self?.playbackTimer?.invalidate()
 
             YepAudioService.sharedManager.endRecord()
 
@@ -305,6 +318,7 @@ class NewFeedVoiceRecordViewController: SegueViewController {
 
                 sampleValues.append(value)
                 voiceRecordSampleView.appendSampleValue(value)
+                //println("value: \(value)")
             }
         }
     }
@@ -370,7 +384,7 @@ class NewFeedVoiceRecordViewController: SegueViewController {
                 audioPlayer.play()
                 audioPlaying = true
 
-                playbackTimer = NSTimer.scheduledTimerWithTimeInterval(0.02, target: self, selector: "updateAudioPlaybackProgress:", userInfo: nil, repeats: true)
+                playbackTimer = NSTimer.scheduledTimerWithTimeInterval(0.02, target: self, selector: #selector(NewFeedVoiceRecordViewController.updateAudioPlaybackProgress(_:)), userInfo: nil, repeats: true)
             }
 
         } else {
@@ -397,7 +411,7 @@ class NewFeedVoiceRecordViewController: SegueViewController {
 
                     audioPlaying = true
 
-                    playbackTimer = NSTimer.scheduledTimerWithTimeInterval(0.02, target: self, selector: "updateAudioPlaybackProgress:", userInfo: nil, repeats: true)
+                    playbackTimer = NSTimer.scheduledTimerWithTimeInterval(0.02, target: self, selector: #selector(NewFeedVoiceRecordViewController.updateAudioPlaybackProgress(_:)), userInfo: nil, repeats: true)
                 }
 
             } catch let error {
